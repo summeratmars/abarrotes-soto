@@ -125,6 +125,23 @@
         }
     }
 
+    .boton-agregar {
+        width: 100%;
+        background-color: #2e7d32; /* Verde estilo Aurrera */
+        border: none;
+        border-radius: 40px;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        font-size: 16px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: background-color 0.3s ease;
+    }
+    .boton-agregar:hover {
+        background-color: #1b5e20;
+    }
+
+
 
 </style>
 
@@ -197,20 +214,22 @@
                             width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center;">
                         <span style="margin-left: 5px;">kg</span>
                     </div>
-                    <button onclick="agregarGranel('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
-                        {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, 
-                        {{ p['puntos_lealtad']|round(0)|int }})"
-                        style="margin-top: 8px; padding: 6px 12px; background-color: #b30000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    <button class="boton-agregar"
+                            onclick="agregarGranel('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
+                            {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, 
+                            {{ p['puntos_lealtad']|round(0)|int }})">
                         ➕ Agregar
                     </button>
+
                 {% else %}
-                    <button onclick="incrementarCantidad('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
-                        {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}, 
-                        {{ p['precio_venta'] }}, 
-                        {{ p['puntos_lealtad']|round(0)|int }})"
-                        style="padding: 6px 12px; background-color: #b30000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    <button class="boton-agregar"
+                            onclick="incrementarCantidad('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
+                            {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}, 
+                            {{ p['precio_venta'] }}, 
+                            {{ p['puntos_lealtad']|round(0)|int }})">
                         🛒 Agregar
                     </button>
+
                 {% endif %}
             </div>
 
