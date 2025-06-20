@@ -1,4 +1,5 @@
 Flask
 pandas
+gunicorn
 openpyxl
 mysql-connector-python
