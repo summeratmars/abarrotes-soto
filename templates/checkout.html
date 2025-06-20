@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}Finalizar Pedido{% endblock %}
+{% block contenido %}
+
+<h1 style="color: #b30000; text-align: center; margin-bottom: 30px;">📦 Finaliza tu pedido</h1>
+
+<form action="/checkout" method="POST" onsubmit="guardarDatosCarrito()" style="
+    max-width: 500px;
+    margin: auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+">
+    <label for="nombre" style="font-weight: bold; display: block; margin-top: 20px;">Nombre completo:</label>
+    <input type="text" name="nombre" id="nombre" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+    <label for="direccion" style="font-weight: bold; display: block; margin-top: 20px;">Dirección:</label>
+    <input type="text" name="direccion" id="direccion" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+    <label for="telefono" style="font-weight: bold; display: block; margin-top: 20px;">Teléfono:</label>
+    <input type="tel" name="telefono" id="telefono" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+    <div style="margin-bottom: 15px;">
+        <label for="numero_cliente" style="font-weight: bold; display: block; margin-top: 20px;">Número de cliente (opcional):</label><br>
+        <input type="text" id="numero_cliente" name="numero_cliente" placeholder="Ej. 5020003" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+    </div>
+
+    <label for="pago" style="font-weight: bold; display: block; margin-top: 20px;">Forma de pago:</label>
+    <select name="pago" id="pago" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+        <option value="">Selecciona una opción</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="Transferencia">Transferencia</option>
+        <option value="Tarjeta">Tarjeta</option>
+    </select>
+
+    <input type="hidden" name="carrito_json" id="carrito_json">
+
+
+    <button type="submit" style="margin-top: 30px; width: 100%; padding: 12px; background-color: #4CAF50; color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+        ✅ Enviar Pedido
+    </button>
+</form>
+
+<script>
+    function guardarDatosCarrito() {
+        const carrito = localStorage.getItem('carrito');
+        document.getElementById("carrito_json").value = carrito;
+    }
+</script>
+
+<script>
+// 🛒 Cargar y limpiar carrito si se envió un pedido
+let carrito = (() => {
+    const flag = localStorage.getItem('pedido_enviado');
+    if (flag === '1') {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+        return [];
+    }
+    return JSON.parse(localStorage.getItem('carrito')) || [];
+})();
+
+// 🔄 Actualizar contador del carrito en el encabezado
+function actualizarBotonCarrito() {
+    let total = 0, cantidad = 0;
+    carrito.forEach(p => {
+        total += p.precio * p.cantidad;
+        cantidad += p.cantidad;
+    });
+    const contador = document.getElementById('carrito-contador');
+    const totalSpan = document.getElementById('carrito-total');
+    if (contador) contador.textContent = cantidad;
+    if (totalSpan) totalSpan.textContent = total.toFixed(2);
+}
+
+window.onload = actualizarBotonCarrito;
+</script>
+
+
+{% endblock %}

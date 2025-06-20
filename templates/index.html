@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block contenido %}
+
+<style>
+    .producto {
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 4px 10px rgba(255, 0, 0, 0.15);
+        margin: 15px;
+        width: 250px;
+        display: inline-block;
+        vertical-align: top;
+        text-align: center;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+    }
+    .producto:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .producto img {
+        width: 100%;
+        height: 140px;
+        object-fit: contain;
+        background: #ffffff;
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    .contenido {
+        padding: 15px 10px 20px;
+        background-color: #fff2f2;
+    }
+    .nombre {
+        font-weight: bold;
+        font-size: 18px;
+        color: #222;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+    }
+    .precio-descuento {
+        font-size: 22px;
+        font-weight: bold;
+        color: green;
+    }
+    .precio-normal {
+        font-size: 16px;
+        text-decoration: line-through;
+        color: #999;
+        margin-left: 8px;
+    }
+    .monedero {
+        font-size: 14px;
+        margin-top: 8px;
+        color: #444;
+    }
+    .descuento-label {
+        background-color: #ff1a1a;
+        color: white;
+        font-weight: bold;
+        padding: 4px 8px;
+        border-radius: 8px;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 12px;
+    }
+    .ahorro {
+        margin-top: 6px;
+        background-color: #e6f9e6;
+        color: #009900;
+        padding: 5px 10px;
+        border-radius: 8px;
+        display: inline-block;
+        font-size: 14px;
+    }
+    .categoria-texto {
+        font-size: 12px;
+        color: #888;
+        margin-top: 5px;
+    }
+    .botones a {
+        display: inline-block;
+        padding: 6px 14px;
+        margin: 5px 6px 5px 0;
+        border-radius: 20px;
+        border: 2px solid #b30000;
+        background-color: white;
+        color: #b30000;
+        font-weight: bold;
+        text-decoration: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .botones a:hover {
+        background-color: #ffe5e5;
+        color: #800000;
+    }
+    .botones a.activo {
+        background-color: #b30000;
+        color: white;
+    }
+</style>
+
+<div class="botones">
+    <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
+    {% for dep in departamentos %}
+        <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
+    {% endfor %}
+</div>
+
+{% if categorias %}
+<div class="botones">
+    <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas las categorías</a>
+    {% for cat in categorias %}
+        <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div>
+{% for p in productos %}
+    <div class="producto" style="position: relative;">
+        {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+            <div class="descuento-label">DESCUENTO</div>
+        {% endif %}
+        <img 
+            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}"
+            onerror="this.onerror=null;
+                     this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}';
+                     this.onerror=function(){
+                         this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}';
+                         this.onerror=function(){
+                             this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}';
+                             this.onerror=function(){
+                                 this.src='{{ url_for('static', filename='images/sinfoto.png') }}';
+                             };
+                         };
+                     };">
+        <div class="contenido">
+            <div class="nombre">{{ p['nombre_producto']|title }}</div>
+
+            {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                <div style="font-size: 14px; color: #555;">Precio por kilogramo:</div>
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+            {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+                <div>
+                    <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+                    <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+                </div>
+                <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+            {% else %}
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+            {% endif %}
+
+            {% if p['puntos_lealtad'] > 0 %}
+                <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
+            {% endif %}
+
+            <div class="categoria-texto">{{ p['nombre_dep'] }} › {{ p['nombre_categoria'] }}</div>
+
+            <div id="control-{{ p['cbarras'] }}"
+                data-nombre="{{ p['nombre_producto'] }}"
+                data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
+                data-precio-original="{{ p['precio_venta'] }}"
+                data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
+
+                {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                    <div style="margin-top: 10px;">
+                        <input type="number" id="peso-{{ p['cbarras'] }}" min="0.1" step="0.05" value="0.25" style="
+                            width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center;">
+                        <span style="margin-left: 5px;">kg</span>
+                    </div>
+                    <button onclick="agregarGranel('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
+                        {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, 
+                        {{ p['puntos_lealtad']|round(0)|int }})"
+                        style="margin-top: 8px; padding: 6px 12px; background-color: #b30000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        ➕ Agregar
+                    </button>
+                {% else %}
+                    <button onclick="incrementarCantidad('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
+                        {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}, 
+                        {{ p['precio_venta'] }}, 
+                        {{ p['puntos_lealtad']|round(0)|int }})"
+                        style="padding: 6px 12px; background-color: #b30000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        🛒 Agregar
+                    </button>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    function agregarGranel(cbarras, nombre, precio, precioOriginal, puntosLealtad = 0) {
+        const input = document.getElementById("peso-" + cbarras);
+        const cantidad = parseFloat(input.value);
+        if (isNaN(cantidad) || cantidad <= 0) {
+            mostrarToast("❌ Cantidad inválida", "#d32f2f", "⚠️");
+            return;
+        }
+
+        let existente = carrito.find(p => p.cbarras === cbarras);
+        if (existente) {
+            existente.cantidad += cantidad;
+        } else {
+            carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad, puntos: puntosLealtad });
+        }
+
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        actualizarBotonCarrito();
+        mostrarToast(`${cantidad} kg agregados`);
+    }
+    </script>
+
+{% endfor %}
+</div>
+
+{% endblock %}
