@@ -8,7 +8,8 @@
         box-shadow: 0 4px 10px rgba(255, 0, 0, 0.15);
         margin: 15px;
         width: 250px;
-        display: inline-block;
+        flex: 1 1 250px;
+        max-width: 280px;
         vertical-align: top;
         text-align: center;
         overflow: hidden;
@@ -98,6 +99,33 @@
         background-color: #b30000;
         color: white;
     }
+    .contenedor-productos {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+    }
+    @media (max-width: 480px) {
+        .producto {
+            max-width: 100%;
+        }
+        .nombre {
+            font-size: 16px;
+        }
+        .precio-descuento {
+            font-size: 20px;
+        }
+        .precio-normal {
+            font-size: 14px;
+        }
+        .monedero,
+        .categoria-texto,
+        .ahorro {
+            font-size: 12px;
+        }
+    }
+
+
 </style>
 
 <div class="botones">
@@ -116,22 +144,22 @@
 </div>
 {% endif %}
 
-<div>
+<div class="contenedor-productos">
 {% for p in productos %}
     <div class="producto" style="position: relative;">
         {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
             <div class="descuento-label">DESCUENTO</div>
         {% endif %}
         <img 
-            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}"
+            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
             onerror="this.onerror=null;
-                     this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}';
+                     this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
                      this.onerror=function(){
-                         this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}';
+                         this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
                          this.onerror=function(){
-                             this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}';
+                             this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
                              this.onerror=function(){
-                                 this.src='{{ url_for('static', filename='images/sinfoto.png') }}';
+                                 this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
                              };
                          };
                      };">
