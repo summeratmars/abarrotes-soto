@@ -1,0 +1,186 @@
+<!-- templates/base_movil.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
+    <style>
+        body {
+            margin-top: 180px;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #fff;
+            color: #333;
+            padding: 20px;
+        }
+
+        .barra-top {
+            background: #b30000;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+
+        .barra-top .menu-toggle,
+        .barra-top .logo-wrap,
+        .barra-top .barra-busqueda,
+        .barra-top .carrito-icono {
+            margin: 6px 0;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .logo {
+            height: 40px;
+        }
+        .barra-busqueda {
+            margin-top: 12px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+
+        .barra-busqueda input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+        }
+        .barra-busqueda select {
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+            font-size: 15px;
+            width: 100%;
+        }
+
+        .barra-busqueda button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            color: #b30000;
+            font-weight: bold;
+        }
+
+        .menu-toggle {
+            font-size: 26px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .logo-wrap img {
+            height: 40px;
+        }
+
+        .carrito-icono {
+            font-size: 20px;
+            color: white;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .burbuja-carrito {
+            background: red;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            display: none;
+        }
+
+        .menu-oculto {
+            display: none;
+            flex-direction: column;
+            background-color: white;
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            z-index: 999;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .menu-oculto a {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-decoration: none;
+            color: #b30000;
+            font-weight: bold;
+        }
+
+        .menu-oculto a:hover {
+            background-color: #f2f2f2;
+        }
+        .fila-superior {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="barra-top">
+        <div class="fila-superior">
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <a href="/" class="logo-wrap">
+                <img class="logo" src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo">
+            </a>
+            <a href="/cart" class="carrito-icono">
+                🛒<span id="contador-burbuja" class="burbuja-carrito"></span>
+            </a>
+
+        </div>
+
+        <form method="get" action="/" class="barra-busqueda">
+            <input type="text" name="q" placeholder="Buscar producto..." value="{{ request.args.get('q', '') }}">
+            <button type="submit">🔍</button>
+        </form>
+    </div>
+
+    <div id="menu-desplegable" class="menu-oculto">
+        <a href="/monedero">💳 Registro Monedero</a>
+        <a href="/cart">🧾 Ver Pedido</a>
+    </div>
+
+    {% block contenido %}{% endblock %}
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("menu-desplegable");
+            menu.style.display = (menu.style.display === "flex") ? "none" : "flex";
+        }
+
+        let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+        function actualizarBotonCarrito() {
+            let cantidad = carrito.reduce((acc, p) => acc + p.cantidad, 0);
+            const burbuja = document.getElementById('contador-burbuja');
+
+            if (burbuja) {
+                if (cantidad > 0) {
+                    burbuja.textContent = cantidad;
+                    burbuja.style.display = "inline-block";
+                } else {
+                    burbuja.style.display = "none";
+                }
+            }
+        }
+
+        window.onload = actualizarBotonCarrito;
+    </script>
+
+</body>
+</html>

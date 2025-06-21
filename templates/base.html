@@ -12,28 +12,31 @@
             color: #333;
             padding: 20px;
         }
-        .barra-top {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #b30000;
-            color: white;
-            display: flex;
-            align-items: center;
-            padding: 10px 20px;
-            z-index: 1000;
-            gap: 20px;
-        }
+
         .logo {
             height: 60px;
         }
+
+        .menu-toggle {
+            font-size: 24px;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .logo-wrap img {
+            height: 40px;
+        }
+
         .barra-busqueda {
             flex: 1;
             display: flex;
+            margin: 0 10px;
             gap: 8px;
             align-items: center;
         }
+
         .barra-busqueda input,
         .barra-busqueda select {
             padding: 8px;
@@ -41,6 +44,7 @@
             border: none;
             font-size: 15px;
         }
+
         .barra-busqueda button {
             padding: 8px 14px;
             background: #ffffff;
@@ -50,7 +54,9 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .boton-monedero, .boton-pedido {
+
+        .boton-monedero,
+        .boton-pedido {
             background-color: white;
             color: #b30000;
             padding: 8px 14px;
@@ -61,30 +67,170 @@
             white-space: nowrap;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
+
+        .carrito-icono {
+            font-size: 20px;
+            color: white;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .menu-oculto {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: white;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+
+        .menu-oculto a {
+            padding: 12px 20px;
+            border-bottom: 1px solid #ddd;
+            color: #b30000;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .menu-oculto a:hover {
+            background-color: #f9f9f9;
+        }
+
+        .burbuja-carrito {
+            background: red;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 50%;
+            padding: 2px 6px;
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            display: none;
+        }
+        .barra-top {
+            background: #b30000;
+            color: white;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+
+        .barra-izquierda,
+        .barra-centro,
+        .barra-derecha {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .barra-centro {
+            flex: 1;
+        }
+
+        .barra-centro input,
+        .barra-centro select {
+            width: 160px;
+        }
+
+
+
+        @keyframes rebote {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .rebote {
+            animation: rebote 0.3s ease;
+        }
+
+        /* SOLO APLICA EN MÓVIL */
+        @media (max-width: 768px) {
+            .barra-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .barra-top .menu-toggle,
+            .barra-top .logo-wrap,
+            .barra-top .barra-busqueda,
+            .barra-top .carrito-icono {
+                margin: 6px 0;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .barra-busqueda {
+                flex-direction: column;
+            }
+
+            .barra-busqueda input {
+                width: 100%;
+            }
+
+            .barra-busqueda button {
+                margin-top: 5px;
+                width: 100%;
+            }
+
+            body {
+                margin-top: 180px;
+            }
+
+            .burbuja-carrito {
+                display: inline-block;
+            }
+        }
     </style>
+
+   
 </head>
 <body>
 
-    <!-- 🔴 ENCABEZADO UNIFICADO -->
-    <div class="barra-top">
-        <a href="/">
-            <img class="logo" src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo Abarrotes Soto">
-        </a>
 
-        <form method="get" action="/" class="barra-busqueda">
-            <input type="text" name="q" placeholder="🔍 Buscar producto..." value="{{ request.args.get('q', '') }}">
+    <div class="barra-top">
+        <div class="barra-izquierda">
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <a href="/" class="logo-wrap">
+                <img class="logo" src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo">
+            </a>
+        </div>
+
+        <form method="get" action="/" class="barra-centro">
+            <input type="text" name="q" placeholder="Buscar producto..." value="{{ request.args.get('q', '') }}">
             <select name="orden">
                 <option value="">Ordenar por...</option>
-                <option value="nombre_asc" {% if request.args.get('orden') == 'nombre_asc' %}selected{% endif %}>Nombre A–Z</option>
-                <option value="precio_asc" {% if request.args.get('orden') == 'precio_asc' %}selected{% endif %}>Precio más bajo</option>
-                <option value="precio_desc" {% if request.args.get('orden') == 'precio_desc' %}selected{% endif %}>Precio más alto</option>
+                <option value="nombre_asc">Nombre A–Z</option>
+                <option value="precio_asc">Precio más bajo</option>
+                <option value="precio_desc">Precio más alto</option>
             </select>
             <button type="submit">Buscar</button>
         </form>
 
-        <a href="/monedero" class="boton-monedero">💳 Registro Monedero</a>
-        <a href="/cart" class="boton-pedido">🧾 Ver Pedido (<span id="carrito-contador">0</span>) — $<span id="carrito-total">0.00</span></a>
+        <div class="barra-derecha">
+            <a href="/monedero" class="boton-monedero">💳 Registro Monedero</a>
+            <a href="/cart" class="boton-pedido">🧾 Ver Pedido (<span id="carrito-contador">0</span>) — $<span id="carrito-total">0.00</span></a>
+        </div>
     </div>
+
+
+    <div id="menu-desplegable" class="menu-oculto">
+        <a href="/monedero">💳 Registro Monedero</a>
+        <!-- Agrega más opciones si deseas -->
+    </div> 
 
     <!-- 🔵 CONTENIDO CAMBIANTE -->
     <div>
@@ -94,21 +240,31 @@
 
     <script>
         function actualizarBotonCarrito() {
-            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
             let total = 0, cantidad = 0;
             carrito.forEach(p => {
                 total += p.precio * p.cantidad;
                 cantidad += p.cantidad;
             });
-            document.getElementById('carrito-contador').textContent = cantidad;
-            document.getElementById('carrito-total').textContent = total.toFixed(2);
+
+            const contador = document.getElementById('carrito-contador');
+            const totalSpan = document.getElementById('carrito-total');
+            const burbuja = document.getElementById('contador-burbuja');
+
+            if (contador) contador.textContent = cantidad;
+            if (totalSpan) totalSpan.textContent = total.toFixed(2);
+
+            if (burbuja) {
+                if (cantidad > 0) {
+                    burbuja.textContent = cantidad;
+                    burbuja.style.display = "inline-block";
+                    burbuja.classList.add("rebote");
+                    setTimeout(() => burbuja.classList.remove("rebote"), 300);
+                } else {
+                    burbuja.style.display = "none";
+                }
+            }
         }
 
-        window.addEventListener("load", function () {
-            if (typeof actualizarBotonCarrito === "function") {
-                actualizarBotonCarrito();
-            }
-        });
     </script>
 <script>
 // 🛒 Cargar y limpiar carrito si se envió un pedido
@@ -122,18 +278,6 @@ let carrito = (() => {
     return JSON.parse(localStorage.getItem('carrito')) || [];
 })();
 
-// 🔄 Actualizar contador del carrito en el encabezado
-function actualizarBotonCarrito() {
-    let total = 0, cantidad = 0;
-    carrito.forEach(p => {
-        total += p.precio * p.cantidad;
-        cantidad += p.cantidad;
-    });
-    const contador = document.getElementById('carrito-contador');
-    const totalSpan = document.getElementById('carrito-total');
-    if (contador) contador.textContent = cantidad;
-    if (totalSpan) totalSpan.textContent = total.toFixed(2);
-}
 
 window.onload = actualizarBotonCarrito;
 </script>
@@ -249,6 +393,15 @@ function renderControlCantidad(cbarras, cantidad) {
     `;
 }
 </script>
+
+<script>
+function toggleMenu() {
+    const menu = document.getElementById("menu-desplegable");
+    menu.style.display = (menu.style.display === "flex") ? "none" : "flex";
+}
+</script>
+<span id="carrito-contador" style="display: none;"></span>
+<span id="carrito-total" style="display: none;"></span>
 
 
 </body>

@@ -1,0 +1,120 @@
+<!-- templates/base_escritorio.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap">
+    <style>
+        body {
+            margin-top: 110px;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #fff;
+            color: #333;
+            padding: 20px;
+        }
+
+        .barra-top {
+            background: #b30000;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .barra-centro {
+            flex: 1;
+            margin-left: 20px; /* más separación del logo */
+        }
+
+
+        .barra-derecha {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .barra-centro {
+            flex: 1;
+        }
+
+        .barra-centro input,
+        .barra-centro select {
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            width: 220px; /* más ancho */
+        }
+
+
+        .barra-centro button {
+            padding: 12px 20px;
+            font-size: 16px;
+        }
+
+
+        .boton-monedero,
+        .boton-pedido {
+            background-color: white;
+            color: #b30000;
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 14px;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .logo {
+            height: 60px;
+        }
+        .boton-agregar {
+            cursor: pointer; /* 👈 esto hace que salga la manita */
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="barra-top">
+    <div class="barra-izquierda">
+        <a href="/" class="logo-wrap">
+            <img class="logo" src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo">
+        </a>
+    </div>
+    <form method="get" action="/" class="barra-centro">
+        <input type="text" name="q"  placeholder=    "Buscar producto..." value="{{ request.args.get('q', '') }}">
+        <button type="submit">🔍</button>
+        <select name="orden">
+            <option value="">Ordenar por...</option>
+            <option value="nombre_asc">Nombre A–Z</option>
+            <option value="precio_asc">Precio más bajo</option>
+            <option value="precio_desc">Precio más alto</option>
+        </select>
+    </form>
+    <div style="background: #b30000; color: white; text-align: center; padding: 6px; font-size: 14px;">
+        📞 Contacto: 55 7525 1742
+    </div>
+
+    <div class="barra-derecha">
+        <a href="/monedero" class="boton-monedero">💳 Registro Monedero</a>
+        <a href="/cart" class="boton-pedido">📿 Ver Pedido (<span id="carrito-contador">0</span>) — $<span id="carrito-total">0.00</span></a>
+    </div>
+</div>
+
+<div>
+    {% block contenido %}{% endblock %}
+</div>
+<script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+<script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+
+</body>
+</html>
