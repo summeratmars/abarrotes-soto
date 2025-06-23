@@ -181,19 +181,38 @@ def generar_numero_cliente():
     numero_cliente = f"502{nuevo_id:04d}"
     return numero_cliente
 
+from ticket import imprimir_ticket  # Agrega esto arriba del archivo
+
 @app.route("/confirmacion")
 def confirmacion():
-    imprimir_ticket()  # 🔴 Esto se ejecuta automáticamente
+    nombre = session.get("nombre", "Cliente")
+    direccion = session.get("direccion", "")
+    telefono = session.get("telefono", "")
+    numero_cliente = session.get("numero_cliente", "")
+    pago = session.get("pago", "")
+    carrito = session.get("carrito", [])
+    total = session.get("total", 0)
+    ahorro = session.get("ahorro", 0)
+
+    plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
+
+    # ✅ Imprimir automáticamente
+    try:
+        imprimir_ticket(nombre, direccion, telefono, numero_cliente, pago, carrito, total, ahorro)
+    except Exception as e:
+        print("❌ Error al imprimir ticket:", e)
 
     return render_template("confirmacion.html",
-                           nombre=session.get("nombre", "Cliente"),
-                           direccion=session.get("direccion", ""),
-                           telefono=session.get("telefono", ""),
-                           numero_cliente=session.get("numero_cliente", ""),
-                           pago=session.get("pago", ""),
-                           carrito=session.get("carrito", []),
-                           total=session.get("total", 0),
-                           ahorro=session.get("ahorro", 0))
+                           base_template=plantilla_base,
+                           nombre=nombre,
+                           direccion=direccion,
+                           telefono=telefono,
+                           numero_cliente=numero_cliente,
+                           pago=pago,
+                           carrito=carrito,
+                           total=total,
+                           ahorro=ahorro)
+
 
 
 
@@ -203,7 +222,7 @@ def es_movil():
     agente = request.user_agent.string.lower()
     return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
 
-def imprimir_ticket():
+def imprimir_ticket_local():
     try:
         p = Usb(0x0416, 0x5011)  # Reemplaza con los valores reales de tu impresora ZKT si son distintos
 
@@ -248,5 +267,19 @@ def imprimir_ticket():
 
     except Exception as e:
         print(f"❌ Error al imprimir ticket: {e}")
+
+
+    # SOLO PARA PRUEBA LOCAL, puedes comentar esto después
+# with app.test_request_context():
+#     session["nombre"] = "Juan Pérez"
+#     session["direccion"] = "Calle Falsa 123"
+#     session["telefono"] = "1234567890"
+#     session["numero_cliente"] = "5020001"
+#     session["pago"] = "Efectivo"
+#     session["carrito"] = [{"nombre": "Coca Cola", "cantidad": 2, "precio": 18.5}]
+#     session["total"] = 37.0
+#     session["ahorro"] = 3.0
+#     imprimir_ticket_local()
+    
 if __name__ == "__main__":
     app.run(debug=True)
