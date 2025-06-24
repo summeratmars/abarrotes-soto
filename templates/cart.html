@@ -116,10 +116,17 @@ function eliminarProducto(index) {
 }
 
 function vaciarCarrito() {
+    const confirmacion = confirm("¿Estás seguro de que deseas vaciar tu pedido?");
+    if (!confirmacion) return;
+
+    carrito = [];
+    window.carrito = [];
     localStorage.removeItem('carrito');
     renderPedido();
+    actualizarBotonCarrito();
     mostrarToast("🗑️ Pedido eliminado");
 }
+
 
 function mostrarToast(mensaje) {
     const toast = document.getElementById('toast');

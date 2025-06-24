@@ -1,4 +1,20 @@
+// ✅ Inicializar carrito al cargar
+// ✅ Declarar carrito como variable global
+var carrito = [];
 
+(function inicializarCarrito() {
+    const flag = localStorage.getItem('pedido_enviado');
+    if (flag === '1') {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+        carrito = [];
+    } else {
+        carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    }
+})();
+
+
+// ✅ Actualiza el ícono y burbuja del carrito
 function actualizarBotonCarrito() {
     let total = 0, cantidad = 0;
     carrito.forEach(p => {
@@ -25,6 +41,7 @@ function actualizarBotonCarrito() {
     }
 }
 
+// ✅ Agrega 1 unidad de un producto
 function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntosLealtad = 0) {
     let existente = carrito.find(p => p.cbarras === cbarras);
     if (existente) {
@@ -35,9 +52,15 @@ function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntosLeal
     localStorage.setItem('carrito', JSON.stringify(carrito));
     renderControlCantidad(cbarras, existente ? existente.cantidad : 1);
     actualizarBotonCarrito();
-    if (typeof mostrarToast !== 'undefined') mostrarToast("1 unidad agregada");
+
+    // 🔔 Asegúrate de tener esto:
+    if (typeof mostrarToast === "function") {
+        mostrarToast("✅ Producto agregado al pedido");
+    }
 }
 
+
+// ✅ Suma o resta cantidad
 function modificarCantidad(cbarras, cambio) {
     let index = carrito.findIndex(p => p.cbarras === cbarras);
     if (index >= 0) {
@@ -53,21 +76,24 @@ function modificarCantidad(cbarras, cambio) {
     }
 }
 
+// ✅ Restaura botón "Agregar" si cantidad llega a cero
 function restaurarAgregar(cbarras) {
     const div = document.getElementById("control-" + cbarras);
     const nombre = div.dataset.nombre;
     const precio = parseFloat(div.dataset.precio);
-    const precioOriginal = parseFloat(div.dataset["precioOriginal"]);
+    const precioOriginal = parseFloat(div.dataset.precioOriginal);
     const puntos = parseInt(div.dataset.puntos) || 0;
 
     div.innerHTML = `
-        <button onclick="incrementarCantidad('${cbarras}', '${nombre}', ${precio}, ${precioOriginal}, ${puntos})"
-                style="padding: 6px 12px; background-color: #b30000; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+        <button class="boton-agregar"
+            onclick="incrementarCantidad('${cbarras}', '${nombre}', ${precio}, ${precioOriginal}, ${puntos})">
             🛒 Agregar
         </button>
     `;
 }
 
+
+// ✅ Muestra los botones + y – con cantidad actual
 function renderControlCantidad(cbarras, cantidad) {
     const div = document.getElementById("control-" + cbarras);
     div.innerHTML = `
@@ -81,7 +107,6 @@ function renderControlCantidad(cbarras, cantidad) {
             background-color: white;
             gap: 15px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            transition: box-shadow 0.3s ease-in-out;
         ">
             <button onclick="modificarCantidad('${cbarras}', -1)" style="
                 border: none;
@@ -90,8 +115,7 @@ function renderControlCantidad(cbarras, cantidad) {
                 font-size: 20px;
                 font-weight: bold;
                 cursor: pointer;
-                transition: color 0.2s ease;
-            " onmouseover="this.style.color='#800000'" onmouseout="this.style.color='#b30000'">–</button>
+            ">–</button>
 
             <span id="cantidad-${cbarras}" style="
                 min-width: 20px;
@@ -108,20 +132,11 @@ function renderControlCantidad(cbarras, cantidad) {
                 font-size: 20px;
                 font-weight: bold;
                 cursor: pointer;
-                transition: color 0.2s ease;
-            " onmouseover="this.style.color='#800000'" onmouseout="this.style.color='#b30000'">+</button>
+            ">+</button>
         </div>
     `;
 }
 
-let carrito = (() => {
-    const flag = localStorage.getItem('pedido_enviado');
-    if (flag === '1') {
-        localStorage.removeItem('carrito');
-        localStorage.removeItem('pedido_enviado');
-        return [];
-    }
-    return JSON.parse(localStorage.getItem('carrito')) || [];
-})();
 
+// ✅ Ejecutar al cargar
 window.onload = actualizarBotonCarrito;

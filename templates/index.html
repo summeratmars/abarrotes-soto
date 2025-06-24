@@ -96,7 +96,7 @@
         color: #800000;
     }
     .botones a.activo {
-        background-color: #b30000;
+        background-color: #00ff08;
         color: white;
     }
     .contenedor-productos {
@@ -145,21 +145,29 @@
 
 </style>
 
-<div class="botones">
-    <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
-    {% for dep in departamentos %}
-        <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
-    {% endfor %}
+<div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
+    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
+    <div class="botones">
+        <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
+        {% for dep in departamentos %}
+            <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
+        {% endfor %}
+    </div>
 </div>
 
+
 {% if categorias %}
-<div class="botones">
-    <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas las categorías</a>
-    {% for cat in categorias %}
-        <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
-    {% endfor %}
+<div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
+    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
+    <div class="botones">
+        <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
+        {% for cat in categorias %}
+            <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+        {% endfor %}
+    </div>
 </div>
 {% endif %}
+
 
 <div class="contenedor-productos">
 {% for p in productos %}
@@ -223,12 +231,15 @@
 
                 {% else %}
                     <button class="boton-agregar"
-                            onclick="incrementarCantidad('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
-                            {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}, 
-                            {{ p['precio_venta'] }}, 
-                            {{ p['puntos_lealtad']|round(0)|int }})">
+                        onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                    '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                    {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
+                                                    {{ p['precio_venta'] }},
+                                                    {{ p['puntos_lealtad']|round(0)|int }})">
                         🛒 Agregar
                     </button>
+
+
 
                 {% endif %}
             </div>
@@ -257,8 +268,14 @@
         mostrarToast(`${cantidad} kg agregados`);
     }
     </script>
+    
+
+</script>
+
 
 {% endfor %}
+
+
 </div>
 
 {% endblock %}

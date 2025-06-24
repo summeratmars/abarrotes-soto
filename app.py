@@ -4,24 +4,24 @@ from flask import session  # ✅ necesario para usar sesiones
 from flask import Flask, request, render_template   
 from escpos.printer import Usb
 from datetime import datetime
+from unidecode import unidecode
 import smtplib
 import pandas as pd
 import json
 import os
 import csv
-
-
-
+if os.getenv("RENDER") != "true":
+    from escpos.printer import Usb
 
 app = Flask(__name__)
 app.secret_key = 'mexico'  # puede ser cualquier texto, pero debe estar
 
 df = pd.read_excel("productos.xlsx")
 
-
-def es_movil():
-    agente = request.user_agent.string.lower()
-    return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
+def normalizar(texto):
+    if not isinstance(texto, str):
+        return ""
+    return unidecode(texto.strip().lower())
 
 
 @app.route('/')
@@ -40,7 +40,13 @@ def index():
     if categoria:
         productos = productos[productos["nombre_categoria"] == categoria]
     if query:
-        productos = productos[productos["nombre_producto"].str.contains(query, case=False, na=False)]
+        palabra = normalizar(query)
+
+        productos = productos[productos.apply(lambda p: (
+            palabra in normalizar(p["nombre_producto"]) or
+            palabra in normalizar(str(p.get("nombre_categoria", ""))) or
+            palabra in normalizar(str(p.get("nombre_dep", "")))
+        ), axis=1)]
 
     if orden == "nombre_asc":
         productos = productos.sort_values(by="nombre_producto")
@@ -114,27 +120,28 @@ def checkout():
 
 @app.route("/monedero", methods=["GET", "POST"])
 def monedero():
+    plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
+
     if request.method == "POST":
         nombre = request.form.get("nombre", "").strip()
         telefono = request.form.get("telefono", "").strip()
 
         numero_cliente = generar_numero_cliente()
 
-        # Guardar en CSV
         with open("clientes.csv", "a", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             if f.tell() == 0:
                 writer.writerow(["cliente_id", "nombre", "telefono"])
             writer.writerow([numero_cliente, nombre, telefono])
 
-        # Enviar por correo
         enviar_correo(nombre, telefono, numero_cliente)
-
         print(f"Registrado: {numero_cliente} - {nombre} - {telefono}")
-        return render_template("monedero.html", mensaje=f"✅ Cliente registrado correctamente. Tu número de cliente es: {numero_cliente}")
-    
-    plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
-    return render_template("monedero.html", base_template=plantilla_base)
+
+        return render_template("monedero.html",
+                               mensaje=f"✅ Cliente registrado correctamente. Tu número de cliente es: {numero_cliente}",
+                               base_template=plantilla_base)
+
+    return render_template("monedero.html", mensaje=None, base_template=plantilla_base)
 
 
 
@@ -180,8 +187,12 @@ def generar_numero_cliente():
     nuevo_id = ultimo_id + 1
     numero_cliente = f"502{nuevo_id:04d}"
     return numero_cliente
+if os.getenv("RENDER") != "true":
+    from ticket import imprimir_ticket
+else:
+    def imprimir_ticket(*args, **kwargs):
+        return  # función vacía para que no falle en Render
 
-from ticket import imprimir_ticket  # Agrega esto arriba del archivo
 
 @app.route("/confirmacion")
 def confirmacion():
@@ -282,4 +293,4 @@ def imprimir_ticket_local():
 #     imprimir_ticket_local()
     
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
