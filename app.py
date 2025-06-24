@@ -9,8 +9,6 @@ import pandas as pd
 import json
 import os
 import csv
-if os.getenv("RENDER") != "true":
-    from escpos.printer import Usb
 
 app = Flask(__name__)
 app.secret_key = 'mexico'  # puede ser cualquier texto, pero debe estar
@@ -186,11 +184,6 @@ def generar_numero_cliente():
     nuevo_id = ultimo_id + 1
     numero_cliente = f"502{nuevo_id:04d}"
     return numero_cliente
-if os.getenv("RENDER") != "true":
-    from ticket import imprimir_ticket
-else:
-    def imprimir_ticket(*args, **kwargs):
-        return  # función vacía para que no falle en Render
 
 
 @app.route("/confirmacion")
@@ -205,12 +198,6 @@ def confirmacion():
     ahorro = session.get("ahorro", 0)
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
-
-    # ✅ Imprimir automáticamente
-    try:
-        imprimir_ticket(nombre, direccion, telefono, numero_cliente, pago, carrito, total, ahorro)
-    except Exception as e:
-        print("❌ Error al imprimir ticket:", e)
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
@@ -232,64 +219,5 @@ def es_movil():
     agente = request.user_agent.string.lower()
     return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
 
-def imprimir_ticket_local():
-    try:
-        p = Usb(0x0416, 0x5011)  # Reemplaza con los valores reales de tu impresora ZKT si son distintos
-
-        nombre = session.get("nombre", "")
-        direccion = session.get("direccion", "")
-        telefono = session.get("telefono", "")
-        numero_cliente = session.get("numero_cliente", "")
-        pago = session.get("pago", "")
-        carrito = session.get("carrito", [])
-        total = session.get("total", 0)
-        ahorro = session.get("ahorro", 0)
-
-        p.set(align='center', text_type='B', width=2, height=2)
-        p.text("ABARROTES SOTO\n\n")
-
-        p.set(align='left', text_type='A', width=1, height=1)
-        p.text(f"📅 {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
-        p.text(f"👤 Cliente: {nombre}\n")
-        p.text(f"📞 Tel: {telefono}\n")
-        if numero_cliente:
-            p.text(f"🆔 ClienteID: {numero_cliente}\n")
-        p.text(f"📍 Dirección: {direccion}\n")
-        p.text(f"💳 Pago: {pago}\n")
-        p.text("--------------------------------\n")
-
-        for pdt in carrito:
-            nombre = pdt["nombre"][:20]
-            cantidad = pdt["cantidad"]
-            precio = pdt["precio"]
-            subtotal = cantidad * precio
-            p.text(f"{nombre:<20} {cantidad} x {precio:.2f}\n")
-            p.text(f"{' ':<20} = ${subtotal:.2f}\n")
-
-        p.text("--------------------------------\n")
-        p.text(f"TOTAL:     ${total:.2f}\n")
-        if ahorro > 0:
-            p.text(f"AHORRO:    ${ahorro:.2f}\n")
-
-        p.text("\n¡Gracias por tu compra!\n")
-        p.cut()
-        print("✅ Ticket enviado a la impresora")
-
-    except Exception as e:
-        print(f"❌ Error al imprimir ticket: {e}")
-
-
-    # SOLO PARA PRUEBA LOCAL, puedes comentar esto después
-# with app.test_request_context():
-#     session["nombre"] = "Juan Pérez"
-#     session["direccion"] = "Calle Falsa 123"
-#     session["telefono"] = "1234567890"
-#     session["numero_cliente"] = "5020001"
-#     session["pago"] = "Efectivo"
-#     session["carrito"] = [{"nombre": "Coca Cola", "cantidad": 2, "precio": 18.5}]
-#     session["total"] = 37.0
-#     session["ahorro"] = 3.0
-#     imprimir_ticket_local()
-    
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
