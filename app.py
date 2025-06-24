@@ -208,7 +208,7 @@ def confirmacion():
     # ✅ Crear ticket como archivo .txt
     try:
         now = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        ruta_tickets = "tickets"
+        ruta_tickets = "/tmp/tickets"
         os.makedirs(ruta_tickets, exist_ok=True)
         nombre_archivo = f"pedido_{now}.txt"
         ruta_completa = os.path.join(ruta_tickets, nombre_archivo)
