@@ -2,7 +2,6 @@ from flask import Flask, render_template, request, jsonify, redirect
 from email.mime.text import MIMEText
 from flask import session  # ✅ necesario para usar sesiones
 from flask import Flask, request, render_template   
-from escpos.printer import Usb
 from datetime import datetime
 from unidecode import unidecode
 import smtplib
