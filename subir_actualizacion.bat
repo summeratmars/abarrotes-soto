@@ -1,18 +1,20 @@
 @echo off
-cd /d %~dp0
+echo ===========================================
+echo 🔄 Subiendo cambios a GitHub...
+echo ===========================================
 
-echo ----------------------------------------
-echo 🚀 Subiendo cambios a GitHub (Render)
-echo ----------------------------------------
-
-git pull origin main
-
-echo.
-set /p mensaje=📝 Escribe el mensaje del commit: 
+REM Paso 1: Agregar todos los cambios
 git add .
-git commit -m "%mensaje%"
+
+REM Paso 2: Pedir mensaje de commit
+set /p MSG=📝 Escribe el mensaje del commit:
+
+REM Paso 3: Hacer commit
+git commit -m "%MSG%"
+
+REM Paso 4: Subir a GitHub
 git push origin main
 
 echo.
-echo ✅ Listo. Cambios subidos correctamente.
+echo ✅ Cambios subidos correctamente.
 pause
