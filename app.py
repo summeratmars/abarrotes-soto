@@ -208,11 +208,12 @@ def confirmacion():
     # ✅ Crear ticket como archivo .txt
     try:
         now = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        ruta_tickets = "/code/tickets"
+        ruta_tickets = "tickets"
         os.makedirs(ruta_tickets, exist_ok=True)
         nombre_archivo = f"pedido_{now}.txt"
         ruta_completa = os.path.join(ruta_tickets, nombre_archivo)
 
+        # 1. Crear el archivo .txt
         with open(ruta_completa, "w", encoding="utf-8") as f:
             f.write("🛎️ NUEVO PEDIDO RECIBIDO — SURTIR URGENTE 🛒\n\n")
             f.write(f"👤 Cliente: {nombre}\n")
@@ -228,11 +229,12 @@ def confirmacion():
                 f.write(f"💸 Ahorro: ${ahorro:.2f}\n")
             f.write(f"\n📅 Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
 
-        # ✅ Ahora sí, subir el archivo ya creado a Google Drive
+        # 2. Subirlo a Google Drive
         subir_a_drive(ruta_completa, nombre_archivo, "12jHX99skYS4usGGxn3IKJ642Ehe7dZYN")
 
     except Exception as e:
-        print("❌ Error al generar o subir el ticket:", e)
+        print("❌ Error al generar archivo de ticket:", e)
+
 
 
     return render_template("confirmacion.html",
@@ -258,7 +260,7 @@ def es_movil():
 def subir_a_drive(ruta_local, nombre_archivo, carpeta_drive_id):
     SCOPES = ['https://www.googleapis.com/auth/drive']
     creds = service_account.Credentials.from_service_account_file(
-        'credentials.json', scopes=SCOPES)
+        ''config_drive.txt'', scopes=SCOPES)
 
     service = build('drive', 'v3', credentials=creds)
 
