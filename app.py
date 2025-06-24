@@ -259,8 +259,7 @@ def es_movil():
 
 def subir_a_drive(ruta_local, nombre_archivo, carpeta_drive_id):
     SCOPES = ['https://www.googleapis.com/auth/drive']
-    creds = service_account.Credentials.from_service_account_file(
-        creds = service_account.Credentials.from_service_account_file('config_drive.txt', scopes=SCOPES)
+    creds = service_account.Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
 
     service = build('drive', 'v3', credentials=creds)
 
