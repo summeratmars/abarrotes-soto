@@ -186,6 +186,8 @@ def generar_numero_cliente():
     return numero_cliente
 
 
+from datetime import datetime
+
 @app.route("/confirmacion")
 def confirmacion():
     nombre = session.get("nombre", "Cliente")
@@ -198,6 +200,29 @@ def confirmacion():
     ahorro = session.get("ahorro", 0)
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
+
+    # ✅ Crear ticket como archivo .txt
+    try:
+        now = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
+        nombre_archivo = f"pedido_{now}.txt"
+
+        with open(f"/code/tickets/{nombre_archivo}", "w", encoding="utf-8") as f:
+            f.write("🛎️ NUEVO PEDIDO RECIBIDO — SURTIR URGENTE 🛒\n\n")
+            f.write(f"👤 Cliente: {nombre}\n")
+            f.write(f"📍 Dirección: {direccion}\n")
+            f.write(f"📞 Teléfono: {telefono}\n\n")
+            f.write("🧾 Productos:\n")
+            for p in carrito:
+                linea = f"- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}"
+                f.write(linea + "\n")
+            f.write(f"\n💳 Pago: {pago}\n")
+            f.write(f"💰 Total: ${total:.2f}\n")
+            if ahorro > 0:
+                f.write(f"💸 Ahorro: ${ahorro:.2f}\n")
+            f.write(f"\n📅 Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+
+    except Exception as e:
+        print("❌ Error al generar archivo de ticket:", e)
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
