@@ -4,11 +4,15 @@ from flask import session  # ✅ necesario para usar sesiones
 from flask import Flask, request, render_template   
 from datetime import datetime
 from unidecode import unidecode
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 import smtplib
 import pandas as pd
 import json
 import os
 import csv
+
 
 app = Flask(__name__)
 app.secret_key = 'mexico'  # puede ser cualquier texto, pero debe estar
@@ -224,8 +228,12 @@ def confirmacion():
                 f.write(f"💸 Ahorro: ${ahorro:.2f}\n")
             f.write(f"\n📅 Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
 
+        # ✅ Ahora sí, subir el archivo ya creado a Google Drive
+        subir_a_drive(ruta_completa, nombre_archivo, "12jHX99skYS4usGGxn3IKJ642Ehe7dZYN")
+
     except Exception as e:
-        print("❌ Error al generar archivo de ticket:", e)
+        print("❌ Error al generar o subir el ticket:", e)
+
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
@@ -246,6 +254,22 @@ def confirmacion():
 def es_movil():
     agente = request.user_agent.string.lower()
     return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
+
+def subir_a_drive(ruta_local, nombre_archivo, carpeta_drive_id):
+    SCOPES = ['https://www.googleapis.com/auth/drive']
+    creds = service_account.Credentials.from_service_account_file(
+        'credentials.json', scopes=SCOPES)
+
+    service = build('drive', 'v3', credentials=creds)
+
+    file_metadata = {
+        'name': nombre_archivo,
+        'parents': [carpeta_drive_id]
+    }
+    media = MediaFileUpload(ruta_local, mimetype='text/plain')
+
+    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+    print(f"📤 Archivo subido a Drive con ID: {file.get('id')}")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
