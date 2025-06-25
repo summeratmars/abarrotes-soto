@@ -1,8 +1,10 @@
+
 {% extends base_template %}
 {% block contenido %}
 
 <style>
     .producto {
+        position: relative;
         border-radius: 20px;
         background: white;
         box-shadow: 0 4px 10px rgba(255, 0, 0, 0.15);
@@ -15,6 +17,7 @@
         overflow: hidden;
         transition: all 0.2s ease-in-out;
     }
+
     .producto:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
@@ -140,12 +143,221 @@
     .boton-agregar:hover {
         background-color: #1b5e20;
     }
-
+    @media (max-width: 480px) {
+        #modalGramos > div {
+            width: 90%;
+            margin: 60px auto;
+        }
+    }    
+    @media (max-width: 480px) {
+        #modalGramos button {
+            font-size: 16px;
+            padding: 10px 14px;
+            margin: 6px 0;
+        }
+    }
+    @media (max-width: 480px) {
+    .contenido {
+        padding: 10px 8px;
+    }
+    .nombre {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+    }
+    .btn-ver-mas {
+    color: #b30000;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    }
+    .btn-ver-mas:hover {
+    text-decoration: underline;
+    }
 
 
 </style>
 
-<div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
+
+
+
+
+
+{% if base_template == 'base_movil.html' and not departamento and not categoria and not query %}
+
+
+
+  <!-- MODO MÓVIL: Carrusel por departamento -->
+  {% for dep, prods in productos_por_departamento.items() %}
+        {% set icono = {
+    'BEBES': '🍼',
+    'BEBIDAS': '🥤',
+    'BELLEZA': '💄',
+    'BOTANAS': '🍿',
+    'CAFETERIA': '☕',
+    'CARNES': '🥩',
+    'CASA Y JARDÍN': '🏡',
+    'COCINA Y HOGAR': '🍽️',
+    'CONDIMENTOS': '🧂',
+    'CUIDADO PERSONAL': '🧴',
+    'DESECHABLES': '🧻',
+    'DULCERIA': '🍬',
+    'ELECTRÓNICOS': '📱',
+    'ENLATADOS': '🥫',
+    'GELATINAS Y POSTRES': '🍮',
+    'GRANOS Y CEREALES': '🌾',
+    'HERRAMIENTAS': '🔧',
+    'HIGIENE BUCAL': '🪥',
+    'HIGIENE PERSONAL': '🧼',
+    'ILUMINACIÓN': '💡',
+    'JARCERIA': '🧹',
+    'LACTEOS': '🧀',
+    'LIMPIEZA': '🧽',
+    'MASCOTAS': '🐶',
+    'MATERIAL DE CURACION': '🩹',
+    'MEDICAMENTO': '💊',
+    'PANADERIA': '🥖',
+    'SABORIZANTES Y JARABES': '🍯',
+    'SALSAS Y ADEREZOS': '🌶️',
+    'TABACO': '🚬',
+    'VINOS Y LICORES': '🍷'
+    }.get(dep.upper(), '🛍️') %}
+
+
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">{{ icono }} {{ dep }}</h2>
+      <div style="font-size: 13px; color: gray; margin-bottom: 10px; margin-left: 2px;">⬅️ Desliza para ver más</div>
+      <div style="display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding-bottom: 10px;">
+        {% for p in prods[:25] %}
+          <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%;">
+            {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+              <div class="descuento-label">DESCUENTO</div>
+            {% endif %}
+            <img 
+            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
+            onerror="this.onerror=null;
+                    this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
+                    this.onerror=function(){
+                        this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
+                        this.onerror=function(){
+                            this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
+                            this.onerror=function(){
+                                this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
+                            };
+                        };
+                    };"
+            >
+            <div class="contenido">
+              <div class="nombre">{{ p['nombre_producto']|title }}</div>
+              {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                <div style="font-size: 14px;">Precio por kilogramo:</div>
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+              {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+                <div>
+                  <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+                  <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+                </div>
+                <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+              {% else %}
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+              {% endif %}
+              {% if p['puntos_lealtad'] > 0 %}
+                <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
+              {% endif %}
+              <div class="categoria-texto">{{ p['nombre_categoria'] }}</div>
+
+              <div id="control-{{ p['cbarras'] }}"
+                  data-nombre="{{ p['nombre_producto'] }}"
+                  data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
+                  data-precio-original="{{ p['precio_venta'] }}"
+                  data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
+                {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                  <button class="boton-agregar" onclick="abrirSelectorGramos('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, {{ p['puntos_lealtad']|round(0)|int }})">
+                    ➕ Agregar
+                  </button>
+                {% else %}
+                  <button class="boton-agregar"
+                    onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
+                                                {{ p['precio_venta'] }},
+                                                {{ p['puntos_lealtad']|round(0)|int }})">
+                    🛒 Agregar
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+        <!-- Tarjeta VER MÁS DENTRO del carrusel -->
+        <a href="/?departamento={{ dep }}" style="text-decoration: none;">
+        <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%; background: #fff3e0;">
+            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div style="font-size: 36px; margin-bottom: 10px;">{{ icono }}</div>
+            <div style="font-weight: bold; color: #b30000; text-align: center;">Ver más de {{ dep.upper() }}</div>
+            </div>
+        </div>
+        </a>
+        </div> <!-- cierre final del carrusel horizontal -->
+
+
+    </div>
+  {% endfor %}
+
+{% else %}
+{% if base_template == 'base_movil.html' and departamento %}
+  {% set icono = {
+  'BEBES': '🍼',
+  'BEBIDAS': '🥤',
+  'BELLEZA': '💄',
+  'BOTANAS': '🍿',
+  'CAFETERIA': '☕',
+  'CARNES': '🥩',
+  'CASA Y JARDÍN': '🏡',
+  'COCINA Y HOGAR': '🍽️',
+  'CONDIMENTOS': '🧂',
+  'CUIDADO PERSONAL': '🧴',
+  'DESECHABLES': '🧻',
+  'DULCERIA': '🍬',
+  'ELECTRÓNICOS': '📱',
+  'ENLATADOS': '🥫',
+  'GELATINAS Y POSTRES': '🍮',
+  'GRANOS Y CEREALES': '🌾',
+  'HERRAMIENTAS': '🔧',
+  'HIGIENE BUCAL': '🪥',
+  'HIGIENE PERSONAL': '🧼',
+  'ILUMINACIÓN': '💡',
+  'JARCERIA': '🧹',
+  'LACTEOS': '🧀',
+  'LIMPIEZA': '🧽',
+  'MASCOTAS': '🐶',
+  'MATERIAL DE CURACION': '🩹',
+  'MEDICAMENTO': '💊',
+  'PANADERIA': '🥖',
+  'SABORIZANTES Y JARABES': '🍯',
+  'SALSAS Y ADEREZOS': '🌶️',
+  'TABACO': '🚬',
+  'VINOS Y LICORES': '🍷'
+}.get(dep.upper(), '🛍️') %}
+
+  
+  <div style="padding: 10px 16px; font-size: 20px; font-weight: bold; color: #b30000; margin-bottom: 10px;">
+    {{ icono }} {{ departamento }}
+  </div>
+{% endif %}
+{% if base_template == 'base_movil.html' and query %}
+  <div style="padding: 10px 16px; font-size: 20px; font-weight: bold; color: #b30000; margin-bottom: 10px;">
+    🔍 Resultados para: <span style="color: #333;">{{ query }}</span>
+  </div>
+{% endif %}
+
+  <!-- MODO ESCRITORIO: Lista de productos normal -->
+{% if base_template != 'base_movil.html' %}
+  <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
     <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
     <div class="botones">
         <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
@@ -153,129 +365,150 @@
             <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
         {% endfor %}
     </div>
-</div>
+  </div>
 
-
-{% if categorias %}
-<div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
-    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
-    <div class="botones">
-        <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
-        {% for cat in categorias %}
-            <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
-        {% endfor %}
-    </div>
-</div>
+  {% if categorias %}
+  <div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
+      <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
+      <div class="botones">
+          <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
+          {% for cat in categorias %}
+              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+          {% endfor %}
+      </div>
+  </div>
+  {% endif %}
 {% endif %}
 
-
-<div class="contenedor-productos">
-{% for p in productos %}
+  <div class="contenedor-productos">
+  {% for p in productos %}
     <div class="producto" style="position: relative;">
-        {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-            <div class="descuento-label">DESCUENTO</div>
-        {% endif %}
+      {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+        <div class="descuento-label">DESCUENTO</div>
+      {% endif %}
         <img 
-            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
-            onerror="this.onerror=null;
-                     this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
-                     this.onerror=function(){
-                         this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
-                         this.onerror=function(){
-                             this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
-                             this.onerror=function(){
-                                 this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
-                             };
-                         };
-                     };">
-        <div class="contenido">
-            <div class="nombre">{{ p['nombre_producto']|title }}</div>
-
-            {% if p['nombre_unidad'] == 'KILOGRAMO' %}
-                <div style="font-size: 14px; color: #555;">Precio por kilogramo:</div>
-                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
-            {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-                <div>
-                    <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
-                    <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
-                </div>
-                <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
-            {% else %}
-                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
-            {% endif %}
-
-            {% if p['puntos_lealtad'] > 0 %}
-                <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
-            {% endif %}
-
-            <div class="categoria-texto">{{ p['nombre_dep'] }} › {{ p['nombre_categoria'] }}</div>
-
-            <div id="control-{{ p['cbarras'] }}"
-                data-nombre="{{ p['nombre_producto'] }}"
-                data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
-                data-precio-original="{{ p['precio_venta'] }}"
-                data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
-
-                {% if p['nombre_unidad'] == 'KILOGRAMO' %}
-                    <div style="margin-top: 10px;">
-                        <input type="number" id="peso-{{ p['cbarras'] }}" min="0.1" step="0.05" value="0.25" style="
-                            width: 80px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; text-align: center;">
-                        <span style="margin-left: 5px;">kg</span>
-                    </div>
-                    <button class="boton-agregar"
-                            onclick="agregarGranel('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', 
-                            {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, 
-                            {{ p['puntos_lealtad']|round(0)|int }})">
-                        ➕ Agregar
-                    </button>
-
-                {% else %}
-                    <button class="boton-agregar"
-                        onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
-                                                    '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
-                                                    {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
-                                                    {{ p['precio_venta'] }},
-                                                    {{ p['puntos_lealtad']|round(0)|int }})">
-                        🛒 Agregar
-                    </button>
-
-
-
-                {% endif %}
-            </div>
-
+        src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
+        onerror="this.onerror=null;
+                this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
+                this.onerror=function(){
+                    this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
+                    this.onerror=function(){
+                        this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
+                        this.onerror=function(){
+                            this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
+                        };
+                    };
+                };"
+        >
+      <div class="contenido">
+        <div class="nombre">{{ p['nombre_producto']|title }}</div>
+        {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+          <div style="font-size: 14px;">Precio por kilogramo:</div>
+          <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+        {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+          <div>
+            <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+            <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+          </div>
+          <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+        {% else %}
+          <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+        {% endif %}
+        {% if p['puntos_lealtad'] > 0 %}
+          <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
+        {% endif %}
+        <div class="categoria-texto">{{ p['nombre_dep'] }} › {{ p['nombre_categoria'] }}</div>
+        <div id="control-{{ p['cbarras'] }}"
+            data-nombre="{{ p['nombre_producto'] }}"
+            data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
+            data-precio-original="{{ p['precio_venta'] }}"
+            data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
+          {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+            <button class="boton-agregar" onclick="abrirSelectorGramos('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, {{ p['puntos_lealtad']|round(0)|int }})">
+              ➕ Agregar
+            </button>
+          {% else %}
+            <button class="boton-agregar"
+              onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                          '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                          {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
+                                          {{ p['precio_venta'] }},
+                                          {{ p['puntos_lealtad']|round(0)|int }})">
+              🛒 Agregar
+            </button>
+          {% endif %}
         </div>
+      </div>
     </div>
+  {% endfor %}
+  </div>
 
-    <script>
-    function agregarGranel(cbarras, nombre, precio, precioOriginal, puntosLealtad = 0) {
-        const input = document.getElementById("peso-" + cbarras);
-        const cantidad = parseFloat(input.value);
-        if (isNaN(cantidad) || cantidad <= 0) {
-            mostrarToast("❌ Cantidad inválida", "#d32f2f", "⚠️");
-            return;
-        }
+{% endif %}
 
-        let existente = carrito.find(p => p.cbarras === cbarras);
-        if (existente) {
-            existente.cantidad += cantidad;
-        } else {
-            carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad, puntos: puntosLealtad });
-        }
-
-        localStorage.setItem('carrito', JSON.stringify(carrito));
-        actualizarBotonCarrito();
-        mostrarToast(`${cantidad} kg agregados`);
-    }
-    </script>
-    
-
-</script>
-
-
-{% endfor %}
-
-
+<div id="modalGramos" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+  <div style="background: white; padding: 20px; border-radius: 12px; max-width: 360px; margin: 100px auto; text-align: center;">
+    <h3>¿Cuánto requieres?</h3>
+    <div id="opcionesGramos">
+      <button onclick="agregarCantidadGramos(0.1)">100g</button><br>
+      <button onclick="agregarCantidadGramos(0.25)">250g</button><br>
+      <button onclick="agregarCantidadGramos(0.5)">500g</button><br>
+      <button onclick="agregarCantidadGramos(0.75)">750g</button><br>
+      <button onclick="agregarCantidadGramos(1)">1 KG</button><br><br>
+      <button onclick="mostrarInputPersonalizado()">✏️ Necesito más</button><br>
+      <div id="personalizadoDiv" style="display: none; margin-top: 10px;">
+        <input type="number" id="inputPersonalizado" step="0.05" min="0.05" placeholder="Ej. 1.5 (kg)" style="padding: 6px; width: 80px;">
+        <button onclick="usarPersonalizado()">Agregar</button>
+      </div>
+    </div>
+    <button onclick="cerrarModalGramos()" style="margin-top: 10px; background: #ccc;">Cancelar</button>
+  </div>
 </div>
+
+<script>
+let granelTemporal = {};
+
+function abrirSelectorGramos(cbarras, nombre, precio, precioOriginal, puntos) {
+    granelTemporal = { cbarras, nombre, precio, precioOriginal, puntos };
+    document.getElementById("modalGramos").style.display = "block";
+}
+
+function cerrarModalGramos() {
+    document.getElementById("modalGramos").style.display = "none";
+    document.getElementById("personalizadoDiv").style.display = "none";
+}
+
+function mostrarInputPersonalizado() {
+    document.getElementById("personalizadoDiv").style.display = "block";
+}
+
+function agregarCantidadGramos(cantidad) {
+    agregarGranelCantidad(cantidad);
+}
+
+function usarPersonalizado() {
+    const cantidad = parseFloat(document.getElementById("inputPersonalizado").value);
+    if (!isNaN(cantidad) && cantidad > 0) {
+        agregarGranelCantidad(cantidad);
+    } else {
+        mostrarToast("❌ Ingresa una cantidad válida");
+    }
+}
+
+function agregarGranelCantidad(cantidad) {
+    const { cbarras, nombre, precio, precioOriginal, puntos } = granelTemporal;
+
+    let existente = carrito.find(p => p.cbarras === cbarras);
+    if (existente) {
+        existente.cantidad += cantidad;
+    } else {
+        carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad, puntos });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarBotonCarrito();
+    mostrarToast(`${cantidad} kg agregados`);
+    cerrarModalGramos();
+}
+</script>
 
 {% endblock %}

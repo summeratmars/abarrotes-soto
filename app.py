@@ -7,6 +7,7 @@ from unidecode import unidecode
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from collections import defaultdict
 import smtplib
 import pandas as pd
 import json
@@ -61,14 +62,25 @@ def index():
     departamentos = sorted(df["nombre_dep"].dropna().unique())
     categorias = sorted(productos["nombre_categoria"].dropna().unique()) if departamento else []
 
+    from collections import defaultdict
+
+    productos_dict = productos.to_dict(orient="records")
+
+    # Agrupar productos por departamento
+    productos_por_departamento = defaultdict(list)
+    for p in productos_dict:
+        productos_por_departamento[p["nombre_dep"]].append(p)
+
     return render_template("index.html",
-                       base_template=plantilla,
-                       productos=productos.to_dict(orient="records"),
-                       query=query,
-                       departamento=departamento,
-                       categoria=categoria,
-                       departamentos=departamentos,
-                       categorias=categorias)
+                    base_template=plantilla,
+                    productos=productos_dict,
+                    productos_por_departamento=productos_por_departamento,
+                    query=query,
+                    departamento=departamento,
+                    categoria=categoria,
+                    departamentos=departamentos,
+                    categorias=categorias)
+
 
 
 
@@ -94,6 +106,9 @@ def checkout():
             pago = request.form.get("pago")
             carrito_json = request.form.get("carrito_json")
             carrito = json.loads(carrito_json)
+            colonia = request.form.get("colonia")
+            session["colonia"] = colonia
+
 
             # Calculamos totales
             total = sum(p["precio"] * p["cantidad"] for p in carrito)
@@ -196,6 +211,7 @@ from datetime import datetime
 def confirmacion():
     nombre = session.get("nombre", "Cliente")
     direccion = session.get("direccion", "")
+    colonia = session.get("colonia", "")
     telefono = session.get("telefono", "")
     numero_cliente = session.get("numero_cliente", "")
     pago = session.get("pago", "")
@@ -215,9 +231,10 @@ def confirmacion():
 
         # 1. Crear el archivo .txt
         with open(ruta_completa, "w", encoding="utf-8") as f:
-            f.write("🛎️ NUEVO PEDIDO RECIBIDO — SURTIR URGENTE 🛒\n\n")
+            f.write("🛎️ NUEVO PEDIDO RECIBIDO 🛒\n\n")
             f.write(f"👤 Cliente: {nombre}\n")
             f.write(f"📍 Dirección: {direccion}\n")
+            f.write(f"🏘️ Colonia: {colonia}\n")
             f.write(f"📞 Teléfono: {telefono}\n\n")
             f.write("🧾 Productos:\n")
             for p in carrito:

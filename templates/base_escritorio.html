@@ -79,7 +79,30 @@
         .boton-agregar {
             cursor: pointer; /* 👈 esto hace que salga la manita */
         }
+        #whatsapp-btn {
+        position: fixed;
+        bottom: 40px;
+        right: 20px;
+        padding: 10px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        text-decoration: none;
+        animation: rebote 1.5s infinite;
+        }
 
+        #whatsapp-btn img {
+        width: 36px;
+        height: 36px;
+        }
+
+        @keyframes rebote {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-6px);
+        }
+        }
     </style>
 </head>
 <body>
@@ -115,6 +138,11 @@
 </div>
 <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
 
+<audio id="sonido-toast" src="{{ url_for('static', filename='sounds/ding.mp3') }}"></audio>
+
+<a href="https://wa.me/5215575251742" target="_blank" id="whatsapp-btn">
+  <img src="{{ url_for('static', filename='images/whatsapp-icon.png') }}" alt="WhatsApp" />
+</a>
 
 </body>
 </html>

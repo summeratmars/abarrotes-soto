@@ -76,23 +76,26 @@
 
     .buscador-form input {
       flex: 1;
-      padding: 10px 14px;
-      font-size: 16px;
-      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 15px;
+      border-radius: 100px;
       border: none;
       width: 100%;
-      max-width: 250px;
+      max-width: none;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     }
 
     .buscador-form button {
-      padding: 10px;
+      padding: 10px 12px;
       border: none;
       background: white;
       color: #b30000;
       font-size: 18px;
-      border-radius: 10px;
+      border-radius: 100px;
       cursor: pointer;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
     }
+
 
     .menu-oculto {
     position: fixed;
@@ -144,6 +147,31 @@
     .overlay.visible {
         display: block;
     }
+    #whatsapp-btn {
+      position: fixed;
+      bottom: 40px;
+      right: 20px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      text-decoration: none;
+      animation: rebote 1.5s infinite;
+    }
+
+    #whatsapp-btn img {
+      width: 36px;
+      height: 36px;
+    }
+
+    @keyframes rebote {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -168,9 +196,8 @@
     <div class="barra-top">
       <div class="fila-superior">
       <button class="menu-toggle" onclick="abrirMenu()">☰</button>
-      <a href="/" class="logo-wrap">
-        <img src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo" class="logo">
-      </a>
+      <a href="/" style="display: flex; flex-direction: column; align-items: center; text-decoration: none;">
+        <img src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo" class="logo" style="height: 38px;">      </a>
       <a href="/cart" class="carrito-icono">
         🧾 Ver Pedido <span id="contador-burbuja" class="burbuja-carrito"></span>
       </a>
@@ -250,6 +277,11 @@
 </div>
 
 <audio id="sonido-toast" src="{{ url_for('static', filename='sounds/ding.mp3') }}"></audio>
+
+<a href="https://wa.me/5215575251742" target="_blank" id="whatsapp-btn">
+  <img src="{{ url_for('static', filename='images/whatsapp-icon.png') }}" alt="WhatsApp" />
+</a>
+
 
 
 </body>
