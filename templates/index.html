@@ -16,6 +16,7 @@
         text-align: center;
         overflow: hidden;
         transition: all 0.2s ease-in-out;
+        min-height: 380px;
     }
 
     .producto:hover {
@@ -44,7 +45,7 @@
     .precio-descuento {
         font-size: 22px;
         font-weight: bold;
-        color: green;
+        color: #006400; /* verde oscuro */
     }
     .precio-normal {
         font-size: 16px;
@@ -136,9 +137,10 @@
         color: white;
         font-weight: bold;
         padding: 10px;
-        font-size: 16px;
+        font-size: 18px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         transition: background-color 0.3s ease;
+        padding: 12px;
     }
     .boton-agregar:hover {
         background-color: #1b5e20;
@@ -190,33 +192,32 @@
 
 
 
-  <!-- MODO MÓVIL: Carrusel por departamento -->
-  {% for dep, prods in productos_por_departamento.items() %}
-        {% set icono = {
-    'BEBES': '🍼',
+{% for dep, prods in productos_por_departamento.items() %}
+  {% set icono = {
+    'BEBES': '👶',
     'BEBIDAS': '🥤',
     'BELLEZA': '💄',
     'BOTANAS': '🍿',
     'CAFETERIA': '☕',
     'CARNES': '🥩',
-    'CASA Y JARDÍN': '🏡',
+    'CASA Y JARDÍN': '🏠',
     'COCINA Y HOGAR': '🍽️',
     'CONDIMENTOS': '🧂',
     'CUIDADO PERSONAL': '🧴',
-    'DESECHABLES': '🧻',
+    'DESECHABLES': '🥡',
     'DULCERIA': '🍬',
     'ELECTRÓNICOS': '📱',
     'ENLATADOS': '🥫',
-    'GELATINAS Y POSTRES': '🍮',
+    'GELATINAS Y POSTRES': '🍰',
     'GRANOS Y CEREALES': '🌾',
-    'HERRAMIENTAS': '🔧',
+    'HERRAMIENTAS': '🛠️',
     'HIGIENE BUCAL': '🪥',
-    'HIGIENE PERSONAL': '🧼',
+    'HIGIENE PERSONAL': '🧻',
     'ILUMINACIÓN': '💡',
     'JARCERIA': '🧹',
-    'LACTEOS': '🧀',
-    'LIMPIEZA': '🧽',
-    'MASCOTAS': '🐶',
+    'LACTEOS': '🥛',
+    'LIMPIEZA': '🧼',
+    'MASCOTAS': '🐾',
     'MATERIAL DE CURACION': '🩹',
     'MEDICAMENTO': '💊',
     'PANADERIA': '🥖',
@@ -224,7 +225,7 @@
     'SALSAS Y ADEREZOS': '🌶️',
     'TABACO': '🚬',
     'VINOS Y LICORES': '🍷'
-    }.get(dep.upper(), '🛍️') %}
+  }.get(dep.upper(), '🛍️') %}
 
 
     <div style="margin-bottom: 30px;">
@@ -236,7 +237,7 @@
             {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
               <div class="descuento-label">DESCUENTO</div>
             {% endif %}
-            <img 
+            <img loading="lazy"
             src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
             onerror="this.onerror=null;
                     this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
