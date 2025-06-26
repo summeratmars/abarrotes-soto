@@ -81,7 +81,9 @@ def index():
                     departamentos=departamentos,
                     categorias=categorias)
 
-
+return render_template("index.html", ...)
+    except Exception as e:
+        return f"Error: {e}", 500
 
 
 @app.route('/cart')
