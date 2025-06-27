@@ -32,7 +32,16 @@ function actualizarBotonCarrito() {
     if (burbuja) {
         if (cantidad > 0) {
             burbuja.textContent = cantidad;
-            burbuja.style.display = "inline-block";
+            burbuja.style.display = "inline-flex";
+            burbuja.style.background = cantidad > 0 ? "red" : "gray";
+            burbuja.style.color = "white";
+
+            // 🎯 Animación de rebote
+            burbuja.classList.remove("rebote");
+            void burbuja.offsetWidth; // Reinicia animación
+            burbuja.classList.add("rebote");
+
+            setTimeout(() => burbuja.classList.remove("rebote"), 500);
             burbuja.classList.add("rebote");
             setTimeout(() => burbuja.classList.remove("rebote"), 300);
         } else {
@@ -43,21 +52,30 @@ function actualizarBotonCarrito() {
 
 // ✅ Agrega 1 unidad de un producto
 function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntosLealtad = 0) {
+    // 🔄 Agrega animación al botón "Agregar"
+    const boton = document.querySelector(`#control-${cbarras} .boton-agregar`);
+    if (boton) {
+        boton.classList.add("animar");
+        setTimeout(() => boton.classList.remove("animar"), 200);
+    }
+
+    // ✅ Agregar al carrito
     let existente = carrito.find(p => p.cbarras === cbarras);
     if (existente) {
         existente.cantidad += 1;
     } else {
         carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad: 1, puntos: puntosLealtad });
     }
+
     localStorage.setItem('carrito', JSON.stringify(carrito));
     renderControlCantidad(cbarras, existente ? existente.cantidad : 1);
     actualizarBotonCarrito();
 
-    // 🔔 Asegúrate de tener esto:
     if (typeof mostrarToast === "function") {
         mostrarToast("✅ Producto agregado al pedido");
     }
 }
+
 
 
 // ✅ Suma o resta cantidad

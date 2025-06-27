@@ -179,6 +179,11 @@
     .btn-ver-mas:hover {
     text-decoration: underline;
     }
+    .boton-agregar.animar {
+      transform: scale(1.15);
+      transition: transform 0.2s ease;
+    }
+
 
 
 </style>
@@ -261,7 +266,7 @@
                   <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
                   <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
                 </div>
-                <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+                <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
               {% else %}
                 <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
               {% endif %}
@@ -356,6 +361,27 @@
   </div>
 {% endif %}
 
+{% if base_template == 'base_movil.html' and (categoria or departamento) %}
+  <a href="/" style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000000;
+    color: #ffffff;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 30px;
+    font-weight: bold;
+    text-decoration: none;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+    🏠 Regresar al inicio
+  </a>
+{% endif %}
+
+
+
   <!-- MODO ESCRITORIO: Lista de productos normal -->
 {% if base_template != 'base_movil.html' %}
   <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
@@ -411,7 +437,7 @@
             <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
             <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
           </div>
-          <div class="ahorro">🍿️ Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+          <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
         {% else %}
           <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
         {% endif %}
@@ -509,7 +535,36 @@ function agregarGranelCantidad(cantidad) {
     actualizarBotonCarrito();
     mostrarToast(`${cantidad} kg agregados`);
     cerrarModalGramos();
+  }    
+
+
+function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntos) {
+    // Animación de zoom
+    const boton = document.querySelector(`#control-${cbarras} .boton-agregar`);
+    if (boton) {
+        boton.classList.add("animar");
+        setTimeout(() => boton.classList.remove("animar"), 200);
+    }
+
+    // Agregar al carrito
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    let existente = carrito.find(p => p.cbarras === cbarras);
+    if (existente) {
+        existente.cantidad += 1;
+    } else {
+        carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad: 1, puntos });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarBotonCarrito();
+    console.log("🧪 incrementarCantidad ejecutada para:", cbarras);
+
 }
+
+
 </script>
+
+
+
 
 {% endblock %}
