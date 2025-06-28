@@ -45,7 +45,7 @@ def imprimir_ticket(nombre, direccion, telefono, numero_cliente, pago, carrito, 
         precio_unitario = f"${p['precio']:.2f}".rjust(8)
         subtotal = f"${p['precio'] * p['cantidad']:.2f}".rjust(8)
         escribir(f"{cantidad} x {nombre} {precio_unitario} {subtotal}")
-        escribir(f"{cantidad} x {nombre} {subtotal}")
+       
 
 
     escribir("----------------------------")
