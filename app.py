@@ -1,22 +1,39 @@
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from email.mime.text import MIMEText
 from flask import session  # ✅ necesario para usar sesiones
-from flask import Flask, request, render_template   
 from datetime import datetime
 from unidecode import unidecode
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from collections import defaultdict
+from werkzeug.utils import secure_filename
+from functools import wraps
 import smtplib
 import pandas as pd
 import json
 import os
 import csv
+import shutil
+import secrets
 
 
 app = Flask(__name__)
 app.secret_key = 'mexico'  # puede ser cualquier texto, pero debe estar
+
+# Configuración para subida de archivos
+UPLOAD_FOLDER = os.path.join('static', 'images')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Asegurar que la carpeta de upload existe
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Credenciales de administrador (en un entorno real, usar hashing de contraseñas y almacenamiento seguro)
+ADMIN_CREDENTIALS = {
+    'admin': 'abarrotessoto2023',
+    'manager': 'manager2023'
+}
 
 df = pd.read_excel("productos.xlsx")
 
@@ -24,6 +41,19 @@ def normalizar(texto):
     if not isinstance(texto, str):
         return ""
     return unidecode(texto.strip().lower())
+
+# Función para verificar si una extensión de archivo está permitida
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Decorador para requerir autenticación en rutas administrativas
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'admin_logged_in' not in session or not session['admin_logged_in']:
+            return redirect(url_for('admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 @app.route('/')
@@ -62,8 +92,6 @@ def index():
     departamentos = sorted(df["nombre_dep"].dropna().unique())
     categorias = sorted(productos["nombre_categoria"].dropna().unique()) if departamento else []
 
-    from collections import defaultdict
-
     productos_dict = productos.to_dict(orient="records")
 
     # Agrupar productos por departamento
@@ -86,7 +114,11 @@ def ver_carrito():
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
     return render_template('cart.html', base_template=plantilla_base)
 
-# En tu archivo app.py o main.py
+@app.route('/admin')
+def admin_redirect():
+    if 'admin_logged_in' in session and session['admin_logged_in']:
+        return redirect(url_for('admin_dashboard'))
+    return redirect(url_for('admin_login'))
 
 @app.route("/checkout", methods=["GET", "POST"])
 def checkout():
@@ -121,14 +153,13 @@ def checkout():
             session["carrito"] = carrito
             session["total"] = total
             session["ahorro"] = ahorro
-            
+
 
             return redirect("/confirmacion")
 
         except Exception as e:
             print("❌ Error al procesar pedido:", e)
             return jsonify({"error": "Error al procesar el pedido"}), 500
-
 
 
 @app.route("/monedero", methods=["GET", "POST"])
@@ -155,9 +186,6 @@ def monedero():
                                base_template=plantilla_base)
 
     return render_template("monedero.html", mensaje=None, base_template=plantilla_base)
-
-
-
 
 
 def enviar_correo(nombre, telefono, cliente_id):
@@ -201,8 +229,6 @@ def generar_numero_cliente():
     numero_cliente = f"502{nuevo_id:04d}"
     return numero_cliente
 
-
-from datetime import datetime
 
 @app.route("/confirmacion")
 def confirmacion():
@@ -263,10 +289,6 @@ def confirmacion():
                            ahorro=ahorro)
 
 
-
-
-
-
 def es_movil():
     agente = request.user_agent.string.lower()
     return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
@@ -286,6 +308,316 @@ def subir_a_drive(ruta_local, nombre_archivo, carpeta_drive_id):
 
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
     print(f"📤 Archivo subido a Drive con ID: {file.get('id')}")
+
+# Rutas de administración
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username in ADMIN_CREDENTIALS and ADMIN_CREDENTIALS[username] == password:
+            session['admin_logged_in'] = True
+            session['admin_username'] = username
+            return redirect(url_for('admin_dashboard'))
+        else:
+            return render_template('admin_login.html', error='Credenciales incorrectas')
+
+    return render_template('admin_login.html')
+
+@app.route('/admin/dashboard')
+@admin_required
+def admin_dashboard():
+    # Cargar datos actualizados
+    df_actual = pd.read_excel("productos.xlsx")
+
+    # Estadísticas para el dashboard
+    total_productos = len(df_actual)
+
+    # Leer clientes desde el archivo CSV
+    total_clientes = 0
+    if os.path.exists("clientes.csv"):
+        with open("clientes.csv", 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            # Restar 1 si hay encabezado
+            total_clientes = sum(1 for row in reader) - 1
+            if total_clientes < 0:
+                total_clientes = 0
+
+    # Ejemplo de pedidos pendientes (en un sistema real, esto vendría de la base de datos)
+    pedidos_pendientes = 0
+
+    # Ejemplo de ventas del mes (en un sistema real, esto vendría de la base de datos)
+    ventas_mes = "0.00"
+
+    # Productos con bajo stock (menos de 5 unidades)
+    productos_bajo_stock = df_actual[df_actual['existencia'] < 5].to_dict(orient='records')
+
+    # Ejemplo de últimos pedidos (en un sistema real, esto vendría de la base de datos)
+    ultimos_pedidos = []
+
+    return render_template('admin.html', 
+                           total_productos=total_productos,
+                           total_clientes=total_clientes,
+                           pedidos_pendientes=pedidos_pendientes,
+                           ventas_mes=ventas_mes,
+                           productos_bajo_stock=productos_bajo_stock,
+                           ultimos_pedidos=ultimos_pedidos)
+
+@app.route('/admin/productos')
+@admin_required
+def admin_productos():
+    # Cargar datos actualizados
+    df_actual = pd.read_excel("productos.xlsx")
+
+    # Paginación
+    pagina_actual = int(request.args.get('pagina', 1))
+    productos_por_pagina = 50
+    total_productos = len(df_actual)
+    total_paginas = (total_productos + productos_por_pagina - 1) // productos_por_pagina
+
+    # Obtener productos para la página actual
+    inicio = (pagina_actual - 1) * productos_por_pagina
+    fin = inicio + productos_por_pagina
+    productos_pagina = df_actual.iloc[inicio:fin].to_dict(orient='records')
+
+    # Obtener categorías y departamentos únicos para los filtros
+    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
+    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
+
+    return render_template('admin_productos.html', 
+                           productos=productos_pagina,
+                           categorias=categorias,
+                           departamentos=departamentos,
+                           pagina_actual=pagina_actual,
+                           total_paginas=total_paginas)
+
+@app.route('/admin/productos/nuevo', methods=['GET', 'POST'])
+@admin_required
+def admin_producto_nuevo():
+    global df
+    df_actual = pd.read_excel("productos.xlsx")
+
+    # Obtener categorías y departamentos únicos
+    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
+    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
+
+    if request.method == 'POST':
+        try:
+            # Obtener datos del formulario
+            cbarras = request.form.get('cbarras')
+            nombre_producto = request.form.get('nombre_producto')
+
+            # Manejo de categoría
+            if request.form.get('nombre_categoria') == 'nueva':
+                nombre_categoria = request.form.get('nueva_categoria')
+                if nombre_categoria not in categorias:
+                    categorias.append(nombre_categoria)
+            else:
+                nombre_categoria = request.form.get('nombre_categoria')
+
+            # Manejo de departamento
+            if request.form.get('nombre_dep') == 'nuevo':
+                nombre_dep = request.form.get('nuevo_departamento')
+                if nombre_dep not in departamentos:
+                    departamentos.append(nombre_dep)
+            else:
+                nombre_dep = request.form.get('nombre_dep')
+
+            precio_venta = float(request.form.get('precio_venta'))
+            precio_venta2 = request.form.get('precio_venta2')
+            precio_venta2 = float(precio_venta2) if precio_venta2 else 0.0
+            # Convertir primero a float y luego a int para manejar valores como '1.0'
+            existencia = int(float(request.form.get('existencia')))
+
+            # Manejar imagen si se proporciona
+            imagen_filename = None
+            if 'imagen' in request.files and request.files['imagen'].filename:
+                imagen = request.files['imagen']
+                if allowed_file(imagen.filename):
+                    # Usar el código de barras como nombre de archivo
+                    extension = os.path.splitext(imagen.filename)[1]
+                    imagen_filename = f"{cbarras}{extension}"
+                    imagen_path = os.path.join(app.config['UPLOAD_FOLDER'], imagen_filename)
+
+                    # Si existe una imagen previa con el mismo nombre, eliminarla
+                    if os.path.exists(imagen_path):
+                        try:
+                            os.remove(imagen_path)
+                        except Exception as e:
+                            print(f"Error al eliminar imagen previa: {e}")
+
+                    imagen.save(imagen_path)
+
+            # Verificar si el código de barras ya existe
+            if cbarras in df_actual['cbarras'].values:
+                return render_template('admin_producto_form.html', 
+                                       error=True,
+                                       mensaje=f"El código de barras {cbarras} ya existe",
+                                       producto=None,
+                                       categorias=categorias,
+                                       departamentos=departamentos)
+
+            # Crear nuevo producto como diccionario
+            nuevo_producto = {
+                'cbarras': cbarras,
+                'nombre_producto': nombre_producto,
+                'nombre_categoria': nombre_categoria,
+                'nombre_dep': nombre_dep,
+                'precio_venta': precio_venta,
+                'precio_venta2': precio_venta2,
+                'existencia': existencia,
+                'imagen': imagen_filename
+            }
+
+            # Agregar el nuevo producto al DataFrame
+            df_actual = pd.concat([df_actual, pd.DataFrame([nuevo_producto])], ignore_index=True)
+
+            # Guardar cambios
+            df_actual.to_excel("productos.xlsx", index=False)
+
+            # Actualizar el DataFrame global
+            df = df_actual
+
+            return redirect(url_for('admin_productos'))
+
+        except Exception as e:
+            return render_template('admin_producto_form.html', 
+                                   error=True,
+                                   mensaje=f"Error al crear producto: {str(e)}",
+                                   producto=None,
+                                   categorias=categorias,
+                                   departamentos=departamentos)
+
+    return render_template('admin_producto_form.html', 
+                           producto=None,
+                           categorias=categorias,
+                           departamentos=departamentos)
+
+@app.route('/admin/productos/editar/<cbarras>', methods=['GET', 'POST'])
+@admin_required
+def admin_producto_editar(cbarras):
+    global df
+    df_actual = pd.read_excel("productos.xlsx")
+
+    # Buscar el producto por código de barras
+    producto = None
+    for _, row in df_actual.iterrows():
+        if str(row['cbarras']) == str(cbarras):
+            producto = row.to_dict()
+            break
+
+    if not producto:
+        return redirect(url_for('admin_productos'))
+
+    # Obtener categorías y departamentos únicos
+    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
+    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
+
+    if request.method == 'POST':
+        try:
+            # Obtener datos del formulario
+            nombre_producto = request.form.get('nombre_producto')
+
+            # Manejo de categoría
+            if request.form.get('nombre_categoria') == 'nueva':
+                nombre_categoria = request.form.get('nueva_categoria')
+                if nombre_categoria not in categorias:
+                    categorias.append(nombre_categoria)
+            else:
+                nombre_categoria = request.form.get('nombre_categoria')
+
+            # Manejo de departamento
+            if request.form.get('nombre_dep') == 'nuevo':
+                nombre_dep = request.form.get('nuevo_departamento')
+                if nombre_dep not in departamentos:
+                    departamentos.append(nombre_dep)
+            else:
+                nombre_dep = request.form.get('nombre_dep')
+
+            precio_venta = float(request.form.get('precio_venta'))
+            precio_venta2 = request.form.get('precio_venta2')
+            precio_venta2 = float(precio_venta2) if precio_venta2 and precio_venta2.strip() else 0.0
+            # Convertir primero a float y luego a int para manejar valores como '1.0'
+            existencia = int(float(request.form.get('existencia')))
+
+            # Manejar imagen si se proporciona
+            imagen_filename = producto.get('imagen')
+            if 'imagen' in request.files and request.files['imagen'].filename:
+                imagen = request.files['imagen']
+                if allowed_file(imagen.filename):
+                    # Usar el código de barras como nombre de archivo
+                    extension = os.path.splitext(imagen.filename)[1]
+                    imagen_filename = f"{cbarras}{extension}"
+                    imagen_path = os.path.join(app.config['UPLOAD_FOLDER'], imagen_filename)
+
+                    # Si existe una imagen previa con el mismo nombre, eliminarla
+                    if os.path.exists(imagen_path):
+                        try:
+                            os.remove(imagen_path)
+                        except Exception as e:
+                            print(f"Error al eliminar imagen previa: {e}")
+
+                    imagen.save(imagen_path)
+
+            # Actualizar el DataFrame
+            for i, row in df_actual.iterrows():
+                if str(row['cbarras']) == str(cbarras):
+                    df_actual.at[i, 'nombre_producto'] = nombre_producto
+                    df_actual.at[i, 'nombre_categoria'] = nombre_categoria
+                    df_actual.at[i, 'nombre_dep'] = nombre_dep
+                    df_actual.at[i, 'precio_venta'] = precio_venta
+                    df_actual.at[i, 'precio_venta2'] = precio_venta2
+                    df_actual.at[i, 'existencia'] = existencia
+                    if imagen_filename:
+                        df_actual.at[i, 'imagen'] = imagen_filename
+                    break
+
+            # Guardar cambios
+            df_actual.to_excel("productos.xlsx", index=False)
+
+            # Actualizar el DataFrame global
+            df = df_actual
+
+            return redirect(url_for('admin_productos'))
+
+        except Exception as e:
+            return render_template('admin_producto_form.html', 
+                                   error=True,
+                                   mensaje=f"Error al actualizar producto: {str(e)}",
+                                   producto=producto,
+                                   categorias=categorias,
+                                   departamentos=departamentos)
+
+    return render_template('admin_producto_form.html', 
+                           producto=producto,
+                           categorias=categorias,
+                           departamentos=departamentos)
+
+@app.route('/admin/productos/eliminar/<cbarras>')
+@admin_required
+def admin_producto_eliminar(cbarras):
+    global df
+    df_actual = pd.read_excel("productos.xlsx")
+
+    # Filtrar el DataFrame para eliminar el producto
+    df_nuevo = df_actual[df_actual['cbarras'].astype(str) != str(cbarras)]
+
+    # Si el tamaño cambió, significa que se eliminó un producto
+    if len(df_nuevo) < len(df_actual):
+        # Guardar cambios
+        df_nuevo.to_excel("productos.xlsx", index=False)
+
+        # Actualizar el DataFrame global
+        df = df_nuevo
+
+    return redirect(url_for('admin_productos'))
+
+@app.route('/logout')
+def logout():
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    return redirect(url_for('index'))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
