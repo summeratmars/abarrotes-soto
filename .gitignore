@@ -1,2 +1,5 @@
 quantum-boulder-463902-g1-b6a89a4f3b09.json
-credentials.json.json 
+credentials.json.json
+.env
+*.env
+telegram_config.json

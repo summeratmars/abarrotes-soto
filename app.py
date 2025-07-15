@@ -272,10 +272,37 @@ def confirmacion():
         # 2. Subirlo a Google Drive
         subir_a_drive(ruta_completa, nombre_archivo, "12jHX99skYS4usGGxn3IKJ642Ehe7dZYN")
 
-    except Exception as e:
-        print("❌ Error al generar archivo de ticket:", e)
+            # 3. Enviar notificación a Telegram
+            try:
+                from telegram_notifier import send_telegram_message
 
+                # Construir mensaje para Telegram
+                mensaje = f"<b>🛒 NUEVO PEDIDO</b>\n\n"
+                mensaje += f"<b>Cliente:</b> {nombre}\n"
+                mensaje += f"<b>Dirección:</b> {direccion}\n"
+                mensaje += f"<b>Colonia:</b> {colonia}\n"
+                mensaje += f"<b>Teléfono:</b> {telefono}\n\n"
+                mensaje += "<b>Productos:</b>\n"
 
+                for p in carrito:
+                    mensaje += f"- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}\n"
+
+                mensaje += f"\n<b>Método de pago:</b> {pago}\n"
+                mensaje += f"<b>Total:</b> ${total:.2f}\n"
+
+                if ahorro > 0:
+                    mensaje += f"<b>Ahorro:</b> ${ahorro:.2f}\n"
+
+                mensaje += f"\n<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+
+                # Enviar notificación
+                send_telegram_message(mensaje)
+
+            except Exception as e:
+                print(f"❌ Error al enviar notificación a Telegram: {e}")
+
+        except Exception as e:
+            print("❌ Error al generar archivo de ticket:", e)
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
