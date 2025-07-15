@@ -1,0 +1,157 @@
+{% extends base_template %}
+{% block titulo %}Pedido Confirmado{% endblock %}
+{% block contenido %}
+<div style="max-width: 800px; margin: auto; padding: 20px;">
+    <div class="check" style="font-size: 100px; color: green;">✅</div>
+    <h1 style="color: #2e7d32; margin-bottom: 10px;">¡Pedido recibido correctamente!</h1>
+    <p>Gracias por tu compra, {{ nombre }}.</p>
+
+    <div class="detalle" style="
+        background: white;
+        display: inline-block;
+        text-align: left;
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        max-width: 600px;
+        width: 100%;
+    ">
+        <p><strong>Dirección:</strong> {{ direccion }}</p>
+        <p><strong>Teléfono:</strong> {{ telefono }}</p>
+        {% if numero_cliente %}
+        <p><strong>Número de cliente:</strong> {{ numero_cliente }}</p>
+        {% endif %}
+
+        <p><strong>Forma de pago:</strong> {{ pago }}</p>
+        <hr>
+        <p><strong>Productos:</strong></p>
+        <ul style="padding-left: 20px; margin-bottom: 15px;">
+            {% for p in carrito %}
+            <li style="margin-bottom: 6px;">
+                {{ p['nombre'] }} × {{ p['cantidad'] }} = ${{ "%.2f"|format(p['precio'] * p['cantidad']) }}
+                {% if p.get('precio_original') and p['precio_original'] > p['precio'] %}
+                    (Ahorro ${{ "%.2f"|format((p['precio_original'] - p['precio']) * p['cantidad']) }})
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="total" style="font-weight: bold; color: #2e7d32; margin-top: 15px;">
+            Total: ${{ "%.2f"|format(total) }} — Ahorro: ${{ "%.2f"|format(ahorro) }}
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="/" onclick="limpiarPedido()" style="
+            padding: 12px 24px;
+            background-color: #2e7d32;
+            color: white;
+            font-weight: bold;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease;
+            display: inline-block;
+        " onmouseover="this.style.backgroundColor='#1b5e20'"
+        onmouseout="this.style.backgroundColor='#2e7d32'">
+            🏠 Volver al catálogo
+        </a>
+    </div>
+
+    <script>
+    function limpiarPedido() {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+    }
+    </script>
+
+</div>
+
+<style>
+@media (max-width: 600px) {
+    .check {
+        font-size: 60px !important;
+    }
+    .detalle {
+        width: 90% !important;
+        padding: 15px !important;
+    }
+    .total {
+        font-size: 16px !important;
+    }
+    h1 {
+        font-size: 20px !important;
+    }
+    a[href="/"] {
+        width: 100%;
+        display: block !important;
+        text-align: center;
+    }
+}
+</style>
+
+<script>
+    // Limpiar el carrito del localStorage y del flotante
+    window.onload = function () {
+        localStorage.removeItem('carrito');
+        localStorage.setItem('pedido_enviado', '1');
+        carrito = [];  // 👈 fuerza la variable a estar vacía en memoria
+        document.getElementById('carrito-contador')?.textContent = '0';
+        document.getElementById('carrito-total')?.textContent = '0.00';
+        document.getElementById('carrito')?.style?.display = 'none';
+        mostrarToast("Pedido enviado correctamente");
+    };
+
+    function mostrarToast(mensaje, color = "#4CAF50", icono = "✅") {
+        const toast = document.getElementById("toast");
+        const msg = document.getElementById("toast-message");
+        const iconElem = document.getElementById("toast-icon");
+        const bar = document.getElementById("toast-progress");
+
+        msg.textContent = mensaje;
+        iconElem.textContent = icono;
+        toast.style.backgroundColor = color;
+        toast.style.display = "block";
+
+        bar.style.transition = "none";
+        bar.style.width = "100%";
+        void bar.offsetWidth;
+        bar.style.transition = "width 5s linear";
+        bar.style.width = "0%";
+
+        setTimeout(() => {
+            toast.style.display = "none";
+        }, 5000);
+    }
+</script>
+
+<script>
+// 🛒 Cargar y limpiar carrito si se envió un pedido
+let carrito = (() => {
+    const flag = localStorage.getItem('pedido_enviado');
+    if (flag === '1') {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+        return [];
+    }
+    return JSON.parse(localStorage.getItem('carrito')) || [];
+})();
+
+// 🔄 Actualizar contador del carrito en el encabezado
+function actualizarBotonCarrito() {
+    let total = 0, cantidad = 0;
+    carrito.forEach(p => {
+        total += p.precio * p.cantidad;
+        cantidad += p.cantidad;
+    });
+    const contador = document.getElementById('carrito-contador');
+    const totalSpan = document.getElementById('carrito-total');
+    if (contador) contador.textContent = cantidad;
+    if (totalSpan) totalSpan.textContent = total.toFixed(2);
+}
+
+window.onload = actualizarBotonCarrito;
+</script>
+
+{% endblock %}

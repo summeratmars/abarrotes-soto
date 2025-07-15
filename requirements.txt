@@ -1,0 +1,10 @@
+Flask
+pandas
+gunicorn
+openpyxl
+mysql-connector-python
+unidecode
+google-api-python-client
+google-auth
+google-auth-httplib2
+google-auth-oauthlib

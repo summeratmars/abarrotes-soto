@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
+  <style>
+    body {
+      margin-top: 160px;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #fff;
+      padding: 10px;
+    }
+
+    .barra-top {
+      background: #b30000;
+      color: white;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 10px 15px;
+      z-index: 999;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .fila-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .menu-toggle {
+      font-size: 28px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+
+    .logo {
+      height: 50px;
+    }
+
+    .carrito-icono {
+      font-size: 18px;
+      font-weight: bold;
+      color: white;
+      text-decoration: none;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .burbuja-carrito {
+      font-size: 12px;
+      font-weight: bold;
+      border-radius: 50%;
+      min-width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      position: absolute;
+      top: -8px;
+      right: -12px;
+      display: none;
+      box-sizing: border-box;
+      transition: background 0.3s;
+    }
+
+
+
+    .buscador-form {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .buscador-form input {
+      flex: 1;
+      padding: 10px 16px;
+      font-size: 15px;
+      border-radius: 100px;
+      border: none;
+      width: 100%;
+      max-width: none;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .buscador-form button {
+      padding: 10px 12px;
+      border: none;
+      background: white;
+      color: #b30000;
+      font-size: 18px;
+      border-radius: 100px;
+      cursor: pointer;
+      box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+    }
+
+
+    .menu-oculto {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    width: 250px;
+    height: 100%;
+    background-color: #fff;
+    box-shadow: 2px 0 6px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    z-index: 1001;
+    }
+
+    .menu-oculto.abierto {
+    transform: translateX(0);
+    }
+
+    .menu-oculto a {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        text-decoration: none;
+        color: #b30000;
+        font-weight: bold;
+        background-color: #fff;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        text-align: left;
+    }
+
+    .menu-oculto a:hover {
+        background-color: #f9f9f9;
+    }
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.3);
+        z-index: 1000;
+        display: none;
+    }
+
+    .overlay.visible {
+        display: block;
+    }
+    #whatsapp-btn {
+      position: fixed;
+      bottom: 40px;
+      right: 20px;
+      padding: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      text-decoration: none;
+      animation: rebote 1.5s infinite;
+    }
+
+    #whatsapp-btn img {
+      width: 36px;
+      height: 36px;
+    }
+
+    @keyframes rebote {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+    .boton-agregar.animar {
+      transform: scale(1.15);
+      transition: transform 0.2s ease;
+    }
+    @keyframes resaltarCarrito {
+      0% { transform: scale(1); box-shadow: none; }
+      50% { transform: scale(1.15); box-shadow: 0 0 8px rgba(255, 255, 255, 0.6); }
+      100% { transform: scale(1); box-shadow: none; }
+    }
+
+    .carrito-destacado {
+      animation: resaltarCarrito 0.8s ease;
+    }
+    .burbuja-carrito {
+      background: red;
+      color: white;
+      font-size: 13px; /* Antes 11px */
+      font-weight: bold;
+      border-radius: 50%;
+      padding: 4px 8px; /* Antes 2px 6px */
+      position: absolute;
+      top: -8px; /* ligeramente más arriba */
+      right: -10px;
+      display: none;
+    }
+    @keyframes rebote-carrito {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.3); }
+      50% { transform: scale(1); }
+    }
+
+    .burbuja-carrito.rebote {
+      animation: rebote-carrito 0.5s ease;
+    }
+    @keyframes rebote-carrito {
+      0%, 100% {
+        transform: scale(1);
+      }
+      40% {
+        transform: scale(1.3);
+      }
+      60% {
+        transform: scale(0.9);
+      }
+    }
+
+    .burbuja-carrito.rebote {
+      animation: rebote-carrito 0.6s ease;
+    }
+
+
+  </style>
+</head>
+<body>
+    <div id="menu-desplegable" class="menu-oculto">
+        <button onclick="cerrarMenu()" style="
+            align-self: flex-end;
+            background: none;
+            border: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #b30000;
+            cursor: pointer;
+            margin-bottom: 20px;
+        ">❌</button>
+
+        <a href="/monedero">💳 Registro Monedero</a>
+        <a href="/cart">🧾 Ver Pedido</a>
+    </div>
+
+    <div class="overlay" id="fondo-oscuro"></div>
+
+    <div class="barra-top">
+      <div class="fila-superior">
+      <button class="menu-toggle" onclick="abrirMenu()">☰</button>
+      <a href="/" style="display: flex; flex-direction: column; align-items: center; text-decoration: none;">
+        <img src="{{ url_for('static', filename='images/logo_abarrotes_soto.png') }}" alt="Logo" class="logo" style="height: 38px;">      </a>
+      <a href="/cart" class="carrito-icono">
+        🧾 Ver Pedido <span id="contador-burbuja" class="burbuja-carrito"></span>
+      </a>
+    </div>
+
+    <form method="get" action="/" class="buscador-form">
+      <input type="text" name="q" placeholder="Buscar..." value="{{ request.args.get('q', '') }}">
+      <button type="submit">🔍</button>
+    </form>
+  </div>
+
+  {% block contenido %}{% endblock %}
+
+
+<script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+
+
+
+
+    <script>
+        function abrirMenu() {
+            document.getElementById("menu-desplegable").classList.add("abierto");
+            document.getElementById("fondo-oscuro").classList.add("visible");
+            document.body.style.overflow = "hidden";
+        }
+
+        function cerrarMenu() {
+            document.getElementById("menu-desplegable").classList.remove("abierto");
+            document.getElementById("fondo-oscuro").classList.remove("visible");
+            document.body.style.overflow = "auto";
+        }
+    </script>
+
+    <script>
+        document.getElementById("menu-desplegable").addEventListener("click", function(e) {
+            if (e.target.tagName !== "BUTTON") {
+                e.stopPropagation();
+            }
+        });
+
+    </script>
+   
+    <script>
+        document.getElementById("fondo-oscuro").addEventListener("click", cerrarMenu);
+    </script>
+
+
+
+<div id="acceso-carrito" style="
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  border: 2px solid #28a745;
+  color: #28a745;
+  font-weight: bold;
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 16px;
+  z-index: 9999;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  text-align: center;
+">
+  ✅ Producto agregado <br>
+  <a id="link-pedido" href="/cart" style="display: inline-block; background: #28a745; color: white; padding: 8px 16px; margin-top: 8px; border-radius: 20px; text-decoration: none;">
+    🧾 Ver mi pedido (1)
+  </a>
+</div>
+<audio id="sonido-toast" src="{{ url_for('static', filename='sounds/ding.mp3') }}"></audio>
+
+<a href="https://wa.me/5215575251742" target="_blank" id="whatsapp-btn">
+  <img src="{{ url_for('static', filename='images/whatsapp-icon.png') }}" alt="WhatsApp" />
+</a>
+
+<script>
+
+function actualizarCantidadEnlacePedido() {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    let total = 0;
+    carrito.forEach(p => {
+        total += p.cantidad;
+    });
+    const link = document.getElementById("link-pedido");
+    if (link) {
+        link.innerHTML = `🧾 Ver mi pedido (${total})`;
+    }
+}
+actualizarCantidadEnlacePedido();
+</script>
+<script>
+function mostrarToast(mensaje = "✅ Producto agregado al pedido") {
+    const toast = document.getElementById("acceso-carrito");
+    const sonido = document.getElementById("sonido-toast");
+
+    actualizarCantidadEnlacePedido();
+
+    const carritoIcono = document.querySelector('.carrito-icono');
+    if (carritoIcono) {
+        carritoIcono.classList.add("carrito-destacado");
+        setTimeout(() => carritoIcono.classList.remove("carrito-destacado"), 1000);
+    }
+
+
+    toast.style.display = "block";
+    toast.style.opacity = "1";
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.display = "none";
+    }, 5000);
+
+    if (sonido) sonido.play();
+}
+</script>
+
+</body>
+</html>

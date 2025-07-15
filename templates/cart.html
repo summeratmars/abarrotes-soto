@@ -1,0 +1,183 @@
+{% extends base_template %}
+{% block titulo %}Tu Pedido - Abarrotes Soto{% endblock %}
+{% block contenido %}
+
+<h1 style="color: #b30000; text-align: center; margin-bottom: 30px;">🧾 Tu Pedido</h1>
+
+<ul id="lista-pedido" style="max-width: 650px; margin: auto; padding: 0; list-style: none;"></ul>
+
+<div class="totales" style="text-align: right; max-width: 650px; margin: 25px auto 10px; font-weight: bold; font-size: 17px;">
+    Total: $<span id="total-pedido">0.00</span><br>
+    Ahorro: $<span id="ahorro-pedido">0.00</span><br>
+    Esta compra genera: <span id="total-puntos">0</span> pts
+</div>
+
+<div class="acciones" style="text-align: center; margin-top: 30px;">
+    <a href="/" style="text-decoration: none; position: absolute; left: 20px; top: 20px; font-size: 15px; color: #b30000; font-weight: bold;">
+        🔙 Regresar al catálogo
+    </a>
+
+    <button onclick="vaciarCarrito()" style="background-color: #b30000; color: white; padding: 10px 25px; border: none; border-radius: 10px; font-weight: bold; font-size: 15px; cursor: pointer;">
+        🧹 Vaciar lista
+    </button>
+
+    <button onclick="window.location.href='/'" style="margin-left: 10px; background-color: #b30000; color: white; padding: 10px 25px; border-radius: 10px; font-weight: bold; font-size: 15px; border: none;">
+        🛒 Seguir comprando
+    </button>
+
+    <button onclick="window.location.href='/checkout'" style="margin-left: 10px; background-color: #00cc66; color: black; font-weight: bold; border: none; border-radius: 10px; padding: 10px 25px; cursor: pointer;">
+        📦 Enviar Pedido
+    </button>
+</div>
+
+<!-- Toast flotante -->
+<div id="toast" style="visibility: hidden; position: fixed; bottom: 20px; left: 20px; background-color: #333; color: #fff; padding: 12px 16px; border-radius: 8px; font-size: 14px; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;">
+    <span id="toast-texto"></span>
+    <div id="toast-barra" style="height: 4px; background-color: lime; margin-top: 6px; width: 100%; transition: width 5s linear;"></div>
+</div>
+
+<script>
+function renderPedido() {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const lista = document.getElementById('lista-pedido');
+    const totalSpan = document.getElementById('total-pedido');
+    const ahorroSpan = document.getElementById('ahorro-pedido');
+    const puntosSpan = document.getElementById('total-puntos');
+    lista.innerHTML = '';
+
+    let total = 0, ahorro = 0, puntos = 0;
+
+    carrito.forEach((p, i) => {
+        const li = document.createElement('li');
+        li.style.display = "flex";
+        li.style.justifyContent = "space-between";
+        li.style.alignItems = "center";
+        li.style.padding = "12px 0";
+        li.style.borderBottom = "1px solid #eee";
+
+        const sub = p.precio * p.cantidad;
+        const desc = ((p.precio_original || p.precio) - p.precio) * p.cantidad;
+        total += sub;
+        ahorro += desc;
+        puntos += (p.puntos || 0) * p.cantidad;
+
+        li.innerHTML = `
+            <span class="nombre" style="font-weight: bold; flex: 1;">${p.nombre}</span>
+            <div class="controles" style="display: flex; align-items: center; gap: 10px;">
+                <div class="cantidad" style="display: flex; align-items: center; border: 1px solid #ccc; border-radius: 20px; overflow: hidden;">
+                    <button onclick="cambiarCantidad(${i}, -1)">−</button>
+                    <span style="width: 30px; text-align: center; font-weight: bold;">${p.cantidad}</span>
+                    <button onclick="cambiarCantidad(${i}, 1)">+</button>
+                </div>
+                <div class="precio" style="font-weight: bold; color: green; min-width: 70px; text-align: right;">
+                    $${sub.toFixed(2)}
+                    ${desc > 0 ? `<div class="descuento" style="color: #b30000; font-size: 13px;">Ahorra $${desc.toFixed(2)}</div>` : ""}
+                </div>
+                <div class="eliminar" onclick="eliminarProducto(${i})" style="color: #b30000; cursor: pointer; font-size: 13px; text-decoration: underline;">
+                    Eliminar
+                </div>
+            </div>
+        `;
+        lista.appendChild(li);
+    });
+
+    totalSpan.textContent = total.toFixed(2);
+    ahorroSpan.textContent = ahorro.toFixed(2);
+    puntosSpan.textContent = Math.round(puntos);
+}
+
+function cambiarCantidad(index, delta) {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const producto = carrito[index];
+    if (!producto) return;
+
+    producto.cantidad += delta;
+
+    if (producto.cantidad < 1) {
+        carrito.splice(index, 1);
+        mostrarToast(`🗑️ ${producto.nombre} eliminado`);
+    } else {
+        mostrarToast(`${delta > 0 ? '✅ 1 unidad agregada' : '➖ 1 unidad eliminada'} de ${producto.nombre}`);
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    renderPedido();
+}
+
+function eliminarProducto(index) {
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    const producto = carrito[index];
+    if (!producto) return;
+
+    carrito.splice(index, 1);
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    renderPedido();
+    mostrarToast(`🗑️ ${producto.nombre} eliminado`);
+}
+
+function vaciarCarrito() {
+    const confirmacion = confirm("¿Estás seguro de que deseas vaciar tu pedido?");
+    if (!confirmacion) return;
+
+    carrito = [];
+    window.carrito = [];
+    localStorage.removeItem('carrito');
+    renderPedido();
+    actualizarBotonCarrito();
+    mostrarToast("🗑️ Pedido eliminado");
+}
+
+
+function mostrarToast(mensaje) {
+    const toast = document.getElementById('toast');
+    const texto = document.getElementById('toast-texto');
+    const barra = document.getElementById('toast-barra');
+
+    texto.textContent = mensaje;
+    toast.style.visibility = 'visible';
+    toast.style.opacity = '1';
+    barra.style.width = '100%';
+
+    setTimeout(() => {
+        barra.style.width = '0%';
+    }, 50);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => {
+            toast.style.visibility = 'hidden';
+        }, 300);
+    }, 5000);
+}
+
+renderPedido();
+</script>
+<script>
+// 🛒 Cargar y limpiar carrito si se envió un pedido
+let carrito = (() => {
+    const flag = localStorage.getItem('pedido_enviado');
+    if (flag === '1') {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+        return [];
+    }
+    return JSON.parse(localStorage.getItem('carrito')) || [];
+})();
+
+// 🔄 Actualizar contador del carrito en el encabezado
+function actualizarBotonCarrito() {
+    let total = 0, cantidad = 0;
+    carrito.forEach(p => {
+        total += p.precio * p.cantidad;
+        cantidad += p.cantidad;
+    });
+    const contador = document.getElementById('carrito-contador');
+    const totalSpan = document.getElementById('carrito-total');
+    if (contador) contador.textContent = cantidad;
+    if (totalSpan) totalSpan.textContent = total.toFixed(2);
+}
+
+window.onload = actualizarBotonCarrito;
+</script>
+
+{% endblock %}

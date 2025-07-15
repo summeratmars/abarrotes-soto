@@ -1,0 +1,163 @@
+{% extends base_template %}
+{% block titulo %}Finalizar Pedido{% endblock %}
+{% block contenido %}
+
+<h1 style="color: #b30000; text-align: center; margin-bottom: 30px;">📦 Finaliza tu pedido</h1>
+
+<form action="/checkout" method="POST" onsubmit="return validarFormulario()" style="
+    max-width: 500px;
+    margin: auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+">
+    <label for="nombre" style="font-weight: bold; display: block; margin-top: 20px;">Nombre:</label>
+    <input type="text" name="nombre" id="nombre" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+    <label for="direccion" style="font-weight: bold; display: block; margin-top: 20px;">Dirección:</label>
+    <input type="text" name="direccion" id="direccion" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+    <label for="colonia" style="font-weight: bold; display: block; margin-top: 20px;">Colonia:</label>
+    <select name="colonia" id="colonia" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;" onchange="verificarColonia()">
+        <option value="">Selecciona tu colonia</option>
+        <optgroup label="Envío desde $50">
+            <option value="VILLAS CHALCO">VILLAS CHALCO</option>
+            <option value="PORTAL CHALCO">PORTAL CHALCO</option>
+            <option value="VOLCANES">VOLCANES</option>
+            <option value="VOLCANES 2">VOLCANES 2</option>
+            <option value="TERRA">TERRA</option>
+            <option value="MARCO ANTONIO SOSA">MARCO ANTONIO SOSA</option>
+        </optgroup>
+        <optgroup label="Envío desde $100">
+            <option value="LA CONCHITA">LA CONCHITA</option>
+            <option value="BARRIO SAN ANTONIO">BARRIO SAN ANTONIO</option>
+            <option value="LA ZAPATA">LA ZAPATA</option>
+            <option value="PASEOS CHALCO">PASEOS CHALCO</option>
+            <option value="MARGARITA MORAN">MARGARITA MORAN</option>
+            <option value="SAN MARTIN XICO NUEVO">SAN MARTIN XICO NUEVO</option>
+            <option value="SAN LORENZO CHIMALPA">SAN LORENZO CHIMALPA</option>
+            <option value="SAN MATEO HUITZILZINGO">SAN MATEO HUITZILZINGO</option>
+            <option value="SAN PABLO">SAN PABLO</option>
+        </optgroup>
+        <option value="OTRO">No está mi colonia</option>
+    </select>
+    <p id="monto-minimo-msg" style="color: #444; font-weight: bold; margin-top: 10px;"></p>
+
+
+    <p id="mensaje-colonia" style="display: none; color: red; font-weight: bold; margin-top: 10px;">
+        Lo sentimos mucho 😔. Próximamente tendremos servicio en tu domicilio.
+    </p>
+
+    <label for="telefono" style="font-weight: bold; display: block; margin-top: 20px;">Teléfono:</label>
+    <input type="tel" name="telefono" id="telefono" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+
+
+    <div style="margin-bottom: 15px;">
+        <label for="numero_cliente" style="font-weight: bold; display: block; margin-top: 20px;">Número de cliente (opcional):</label><br>
+        <input type="text" id="numero_cliente" name="numero_cliente" placeholder="Ej. 5020003" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+    </div>
+
+    <label for="pago" style="font-weight: bold; display: block; margin-top: 20px;">Forma de pago:</label>
+    <select name="pago" id="pago" required style="width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px;">
+        <option value="">Selecciona una opción</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="Transferencia">Transferencia</option>
+        <option value="Tarjeta">Tarjeta (CONTRA ENTREGA)</option>
+    </select>
+
+    <input type="hidden" name="carrito_json" id="carrito_json">
+
+
+    <button type="submit" style="margin-top: 30px; width: 100%; padding: 12px; background-color: #4CAF50; color: white; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+        ✅ Enviar Pedido
+    </button>
+</form>
+
+<script>
+    function guardarDatosCarrito() {
+        const carrito = localStorage.getItem('carrito');
+        document.getElementById("carrito_json").value = carrito;
+    }
+</script>
+
+<script>
+// 🛒 Cargar y limpiar carrito si se envió un pedido
+let carrito = (() => {
+    const flag = localStorage.getItem('pedido_enviado');
+    if (flag === '1') {
+        localStorage.removeItem('carrito');
+        localStorage.removeItem('pedido_enviado');
+        return [];
+    }
+    return JSON.parse(localStorage.getItem('carrito')) || [];
+})();
+
+// 🔄 Actualizar contador del carrito en el encabezado
+function actualizarBotonCarrito() {
+    let total = 0, cantidad = 0;
+    carrito.forEach(p => {
+        total += p.precio * p.cantidad;
+        cantidad += p.cantidad;
+    });
+    const contador = document.getElementById('carrito-contador');
+    const totalSpan = document.getElementById('carrito-total');
+    if (contador) contador.textContent = cantidad;
+    if (totalSpan) totalSpan.textContent = total.toFixed(2);
+}
+
+window.onload = actualizarBotonCarrito;
+</script>
+
+<script>
+function verificarColonia() {
+    const seleccion = document.getElementById('colonia').value;
+    const mensajeColonia = document.getElementById('mensaje-colonia');
+    const montoMinimoMsg = document.getElementById('monto-minimo-msg');
+
+    mensajeColonia.style.display = (seleccion === 'OTRO') ? 'block' : 'none';
+
+    const envio50 = ["VILLAS CHALCO", "PORTAL CHALCO", "VOLCANES", "VOLCANES 2", "TERRA", "MARCO ANTONIO SOSA"];
+    const envio100 = ["LA CONCHITA", "BARRIO SAN ANTONIO", "LA ZAPATA", "PASEOS CHALCO", "MARGARITA MORAN", "SAN MARTIN XICO NUEVO", "SAN LORENZO CHIMALPA", "SAN MATEO HUITZILZINGO", "SAN PABLO"];
+
+    if (envio50.includes(seleccion)) {
+        montoMinimoMsg.textContent = "📦 Monto mínimo para tu colonia: $50 pesos.";
+    } else if (envio100.includes(seleccion)) {
+        montoMinimoMsg.textContent = "📦 Monto mínimo para tu colonia: $100 pesos.";
+    } else {
+        montoMinimoMsg.textContent = "";
+    }
+}
+
+// Validar antes de enviar
+function validarFormulario() {
+    guardarDatosCarrito();
+
+    const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+    const total = carrito.reduce((suma, p) => suma + (p.precio * p.cantidad), 0);
+    const colonia = document.getElementById('colonia').value;
+
+    if (colonia === "OTRO") {
+        alert("No podemos procesar pedidos para esa colonia aún.");
+        return false;
+    }
+
+    const envio50 = ["VILLAS CHALCO", "PORTAL CHALCO", "VOLCANES", "VOLCANES 2", "TERRA", "MARCO ANTONIO SOSA"];
+    const envio100 = ["LA CONCHITA", "BARRIO SAN ANTONIO", "LA ZAPATA", "PASEOS CHALCO", "MARGARITA MORAN", "SAN MARTIN XICO NUEVO", "SAN LORENZO CHIMALPA", "SAN MATEO HUITZILZINGO", "SAN PABLO"];
+
+    if (envio50.includes(colonia) && total < 50) {
+        alert("El monto mínimo para tu colonia es de $50 pesos.");
+        return false;
+    }
+
+    if (envio100.includes(colonia) && total < 100) {
+        alert("El monto mínimo para tu colonia es de $100 pesos.");
+        return false;
+    }
+
+    return true;
+}
+</script>
+
+
+{% endblock %}

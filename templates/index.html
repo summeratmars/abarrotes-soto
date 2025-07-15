@@ -1,0 +1,570 @@
+
+{% extends base_template %}
+{% block contenido %}
+
+<style>
+    .producto {
+        position: relative;
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 4px 10px rgba(255, 0, 0, 0.15);
+        margin: 15px;
+        width: 250px;
+        flex: 1 1 250px;
+        max-width: 280px;
+        vertical-align: top;
+        text-align: center;
+        overflow: hidden;
+        transition: all 0.2s ease-in-out;
+        min-height: 380px;
+    }
+
+    .producto:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .producto img {
+        width: 100%;
+        height: 140px;
+        object-fit: contain;
+        background: #ffffff;
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    .contenido {
+        padding: 15px 10px 20px;
+        background-color: #fff2f2;
+    }
+    .nombre {
+        font-weight: bold;
+        font-size: 18px;
+        color: #222;
+        margin-bottom: 10px;
+        text-transform: capitalize;
+    }
+    .precio-descuento {
+        font-size: 22px;
+        font-weight: bold;
+        color: #006400; /* verde oscuro */
+    }
+    .precio-normal {
+        font-size: 16px;
+        text-decoration: line-through;
+        color: #999;
+        margin-left: 8px;
+    }
+    .monedero {
+        font-size: 14px;
+        margin-top: 8px;
+        color: #444;
+    }
+    .descuento-label {
+        background-color: #ff1a1a;
+        color: white;
+        font-weight: bold;
+        padding: 4px 8px;
+        border-radius: 8px;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 12px;
+    }
+    .ahorro {
+        margin-top: 6px;
+        background-color: #e6f9e6;
+        color: #009900;
+        padding: 5px 10px;
+        border-radius: 8px;
+        display: inline-block;
+        font-size: 14px;
+    }
+    .categoria-texto {
+        font-size: 12px;
+        color: #888;
+        margin-top: 5px;
+    }
+    .botones a {
+        display: inline-block;
+        padding: 6px 14px;
+        margin: 5px 6px 5px 0;
+        border-radius: 20px;
+        border: 2px solid #b30000;
+        background-color: white;
+        color: #b30000;
+        font-weight: bold;
+        text-decoration: none;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .botones a:hover {
+        background-color: #ffe5e5;
+        color: #800000;
+    }
+    .botones a.activo {
+        background-color: #00ff08;
+        color: white;
+    }
+    .contenedor-productos {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+    }
+    @media (max-width: 480px) {
+        .producto {
+            max-width: 100%;
+        }
+        .nombre {
+            font-size: 16px;
+        }
+        .precio-descuento {
+            font-size: 20px;
+        }
+        .precio-normal {
+            font-size: 14px;
+        }
+        .monedero,
+        .categoria-texto,
+        .ahorro {
+            font-size: 12px;
+        }
+    }
+
+    .boton-agregar {
+        width: 100%;
+        background-color: #2e7d32; /* Verde estilo Aurrera */
+        border: none;
+        border-radius: 40px;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        font-size: 18px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: background-color 0.3s ease;
+        padding: 12px;
+    }
+    .boton-agregar:hover {
+        background-color: #1b5e20;
+    }
+    @media (max-width: 480px) {
+        #modalGramos > div {
+            width: 90%;
+            margin: 60px auto;
+        }
+    }    
+    @media (max-width: 480px) {
+        #modalGramos button {
+            font-size: 16px;
+            padding: 10px 14px;
+            margin: 6px 0;
+        }
+    }
+    @media (max-width: 480px) {
+    .contenido {
+        padding: 10px 8px;
+    }
+    .nombre {
+        font-size: 15px;
+        margin-bottom: 6px;
+    }
+    }
+    .btn-ver-mas {
+    color: #b30000;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    }
+    .btn-ver-mas:hover {
+    text-decoration: underline;
+    }
+    .boton-agregar.animar {
+      transform: scale(1.15);
+      transition: transform 0.2s ease;
+    }
+
+
+
+</style>
+
+
+
+
+
+
+{% if base_template == 'base_movil.html' and not departamento and not categoria and not query %}
+
+
+
+{% for dep, prods in productos_por_departamento.items() %}
+  {% set icono = {
+    'BEBES': '👶',
+    'BEBIDAS': '🥤',
+    'BELLEZA': '💄',
+    'BOTANAS': '🍿',
+    'CAFETERIA': '☕',
+    'CARNES': '🥩',
+    'CASA Y JARDÍN': '🏠',
+    'COCINA Y HOGAR': '🍽️',
+    'CONDIMENTOS': '🧂',
+    'CUIDADO PERSONAL': '🧴',
+    'DESECHABLES': '🥡',
+    'DULCERIA': '🍬',
+    'ELECTRÓNICOS': '📱',
+    'ENLATADOS': '🥫',
+    'GELATINAS Y POSTRES': '🍰',
+    'GRANOS Y CEREALES': '🌾',
+    'HERRAMIENTAS': '🛠️',
+    'HIGIENE BUCAL': '🪥',
+    'HIGIENE PERSONAL': '🧻',
+    'ILUMINACIÓN': '💡',
+    'JARCERIA': '🧹',
+    'LACTEOS': '🥛',
+    'LIMPIEZA': '🧼',
+    'MASCOTAS': '🐾',
+    'MATERIAL DE CURACION': '🩹',
+    'MEDICAMENTO': '💊',
+    'PANADERIA': '🥖',
+    'SABORIZANTES Y JARABES': '🍯',
+    'SALSAS Y ADEREZOS': '🌶️',
+    'TABACO': '🚬',
+    'VINOS Y LICORES': '🍷'
+  }.get(departamento.upper(), '🛍️') %}
+
+
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">{{ icono }} {{ dep }}</h2>
+      <div style="font-size: 13px; color: gray; margin-bottom: 10px; margin-left: 2px;">⬅️ Desliza para ver más</div>
+      <div style="display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding-bottom: 10px;">
+        {% for p in prods[:8] %}
+          <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%;">
+            {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+              <div class="descuento-label">DESCUENTO</div>
+            {% endif %}
+            <img loading="lazy"
+            src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
+            onerror="this.onerror=null;
+                    this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
+                    this.onerror=function(){
+                        this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
+                        this.onerror=function(){
+                            this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
+                            this.onerror=function(){
+                                this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
+                            };
+                        };
+                    };"
+            >
+            <div class="contenido">
+              <div class="nombre">{{ p['nombre_producto']|title }}</div>
+              {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                <div style="font-size: 14px;">Precio por kilogramo:</div>
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+              {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+                <div>
+                  <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+                  <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+                </div>
+                <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+              {% else %}
+                <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+              {% endif %}
+              {% if p['puntos_lealtad'] > 0 %}
+                <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
+              {% endif %}
+              <div class="categoria-texto">{{ p['nombre_categoria'] }}</div>
+
+              <div id="control-{{ p['cbarras'] }}"
+                  data-nombre="{{ p['nombre_producto'] }}"
+                  data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
+                  data-precio-original="{{ p['precio_venta'] }}"
+                  data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
+                {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+                  <button class="boton-agregar" onclick="abrirSelectorGramos('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, {{ p['puntos_lealtad']|round(0)|int }})">
+                    ➕ Agregar
+                  </button>
+                {% else %}
+                  <button class="boton-agregar"
+                    onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                                {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
+                                                {{ p['precio_venta'] }},
+                                                {{ p['puntos_lealtad']|round(0)|int }})">
+                    🛒 Agregar
+                  </button>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+
+        <!-- Tarjeta VER MÁS DENTRO del carrusel -->
+        <a href="/?departamento={{ dep }}" style="text-decoration: none;">
+        <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%; background: #fff3e0;">
+            <div style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <div style="font-size: 36px; margin-bottom: 10px;">{{ icono }}</div>
+            <div style="font-weight: bold; color: #b30000; text-align: center;">Ver más de {{ dep.upper() }}</div>
+            </div>
+        </div>
+        </a>
+        </div> <!-- cierre final del carrusel horizontal -->
+
+
+    </div>
+  {% endfor %}
+
+{% else %}
+{% if base_template == 'base_movil.html' and departamento %}
+  {% set icono = {
+  'BEBES': '🍼',
+  'BEBIDAS': '🥤',
+  'BELLEZA': '💄',
+  'BOTANAS': '🍿',
+  'CAFETERIA': '☕',
+  'CARNES': '🥩',
+  'CASA Y JARDÍN': '🏡',
+  'COCINA Y HOGAR': '🍽️',
+  'CONDIMENTOS': '🧂',
+  'CUIDADO PERSONAL': '🧴',
+  'DESECHABLES': '🧻',
+  'DULCERIA': '🍬',
+  'ELECTRÓNICOS': '📱',
+  'ENLATADOS': '🥫',
+  'GELATINAS Y POSTRES': '🍮',
+  'GRANOS Y CEREALES': '🌾',
+  'HERRAMIENTAS': '🔧',
+  'HIGIENE BUCAL': '🪥',
+  'HIGIENE PERSONAL': '🧼',
+  'ILUMINACIÓN': '💡',
+  'JARCERIA': '🧹',
+  'LACTEOS': '🧀',
+  'LIMPIEZA': '🧽',
+  'MASCOTAS': '🐶',
+  'MATERIAL DE CURACION': '🩹',
+  'MEDICAMENTO': '💊',
+  'PANADERIA': '🥖',
+  'SABORIZANTES Y JARABES': '🍯',
+  'SALSAS Y ADEREZOS': '🌶️',
+  'TABACO': '🚬',
+  'VINOS Y LICORES': '🍷'
+}.get(departamento.upper(), '🛍️') %}
+
+  
+  <div style="padding: 10px 16px; font-size: 20px; font-weight: bold; color: #b30000; margin-bottom: 10px;">
+    {{ icono }} {{ departamento }}
+  </div>
+{% endif %}
+{% if base_template == 'base_movil.html' and query %}
+  <div style="padding: 10px 16px; font-size: 20px; font-weight: bold; color: #b30000; margin-bottom: 10px;">
+    🔍 Resultados para: <span style="color: #333;">{{ query }}</span>
+  </div>
+{% endif %}
+
+{% if base_template == 'base_movil.html' and (categoria or departamento) %}
+  <a href="/" style="
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000000;
+    color: #ffffff;
+    padding: 12px 24px;
+    font-size: 16px;
+    border-radius: 30px;
+    font-weight: bold;
+    text-decoration: none;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+    🏠 Regresar al inicio
+  </a>
+{% endif %}
+
+
+
+  <!-- MODO ESCRITORIO: Lista de productos normal -->
+{% if base_template != 'base_movil.html' %}
+  <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
+    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
+    <div class="botones">
+        <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
+        {% for dep in departamentos %}
+            <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
+        {% endfor %}
+    </div>
+  </div>
+
+  {% if categorias %}
+  <div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
+      <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
+      <div class="botones">
+          <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
+          {% for cat in categorias %}
+              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+          {% endfor %}
+      </div>
+  </div>
+  {% endif %}
+{% endif %}
+
+  <div class="contenedor-productos">
+  {% for p in productos %}
+    <div class="producto" style="position: relative;">
+      {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+        <div class="descuento-label">DESCUENTO</div>
+      {% endif %}
+        <img 
+        src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
+        onerror="this.onerror=null;
+                this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpg') }}?v={{ loop.index }}';
+                this.onerror=function(){
+                    this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.jpeg') }}?v={{ loop.index }}';
+                    this.onerror=function(){
+                        this.src='{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.png') }}?v={{ loop.index }}';
+                        this.onerror=function(){
+                            this.src='{{ url_for('static', filename='images/sinfoto.png') }}?v={{ loop.index }}';
+                        };
+                    };
+                };"
+        >
+      <div class="contenido">
+        <div class="nombre">{{ p['nombre_producto']|title }}</div>
+        {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+          <div style="font-size: 14px;">Precio por kilogramo:</div>
+          <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+        {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
+          <div>
+            <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+            <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+          </div>
+          <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+        {% else %}
+          <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
+        {% endif %}
+        {% if p['puntos_lealtad'] > 0 %}
+          <div class="monedero">💰 Obtén {{ p['puntos_lealtad']|round(0)|int }} pts en tu monedero electrónico</div>
+        {% endif %}
+        <div class="categoria-texto">{{ p['nombre_dep'] }} › {{ p['nombre_categoria'] }}</div>
+        <div id="control-{{ p['cbarras'] }}"
+            data-nombre="{{ p['nombre_producto'] }}"
+            data-precio="{{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }}"
+            data-precio-original="{{ p['precio_venta'] }}"
+            data-puntos="{{ p['puntos_lealtad']|round(0)|int }}">
+          {% if p['nombre_unidad'] == 'KILOGRAMO' %}
+            <button class="boton-agregar" onclick="abrirSelectorGramos('{{ p['cbarras'] }}', '{{ p['nombre_producto'] }}', {{ p['precio_venta'] }}, {{ p['precio_venta'] }}, {{ p['puntos_lealtad']|round(0)|int }})">
+              ➕ Agregar
+            </button>
+          {% else %}
+            <button class="boton-agregar"
+              onclick="incrementarCantidad('{{ p['cbarras']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                          '{{ p['nombre_producto']|replace("'", "\\'")|replace('"', '\\"') }}',
+                                          {{ p['precio_venta2'] if (p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta']) else p['precio_venta'] }},
+                                          {{ p['precio_venta'] }},
+                                          {{ p['puntos_lealtad']|round(0)|int }})">
+              🛒 Agregar
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  </div>
+
+{% endif %}
+
+<div id="modalGramos" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
+  <div style="background: white; padding: 20px; border-radius: 12px; max-width: 360px; margin: 100px auto; text-align: center;">
+    <h3>¿Cuánto requieres?</h3>
+    <div id="opcionesGramos">
+      <button onclick="agregarCantidadGramos(0.1)">100g</button><br>
+      <button onclick="agregarCantidadGramos(0.25)">250g</button><br>
+      <button onclick="agregarCantidadGramos(0.5)">500g</button><br>
+      <button onclick="agregarCantidadGramos(0.75)">750g</button><br>
+      <button onclick="agregarCantidadGramos(1)">1 KG</button><br><br>
+      <button onclick="mostrarInputPersonalizado()">✏️ Necesito más</button><br>
+      <div id="personalizadoDiv" style="display: none; margin-top: 10px;">
+        <input type="number" id="inputPersonalizado" step="0.05" min="0.05" placeholder="Ej. 1.5 (kg)" style="padding: 6px; width: 80px;">
+        <button onclick="usarPersonalizado()">Agregar</button>
+      </div>
+    </div>
+    <button onclick="cerrarModalGramos()" style="margin-top: 10px; background: #ccc;">Cancelar</button>
+  </div>
+</div>
+
+<script>
+let granelTemporal = {};
+
+function abrirSelectorGramos(cbarras, nombre, precio, precioOriginal, puntos) {
+    granelTemporal = { cbarras, nombre, precio, precioOriginal, puntos };
+    document.getElementById("modalGramos").style.display = "block";
+}
+
+function cerrarModalGramos() {
+    document.getElementById("modalGramos").style.display = "none";
+    document.getElementById("personalizadoDiv").style.display = "none";
+}
+
+function mostrarInputPersonalizado() {
+    document.getElementById("personalizadoDiv").style.display = "block";
+}
+
+function agregarCantidadGramos(cantidad) {
+    agregarGranelCantidad(cantidad);
+}
+
+function usarPersonalizado() {
+    const cantidad = parseFloat(document.getElementById("inputPersonalizado").value);
+    if (!isNaN(cantidad) && cantidad > 0) {
+        agregarGranelCantidad(cantidad);
+    } else {
+        mostrarToast("❌ Ingresa una cantidad válida");
+    }
+}
+
+function agregarGranelCantidad(cantidad) {
+    const { cbarras, nombre, precio, precioOriginal, puntos } = granelTemporal;
+
+    let existente = carrito.find(p => p.cbarras === cbarras);
+    if (existente) {
+        existente.cantidad += cantidad;
+    } else {
+        carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad, puntos });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarBotonCarrito();
+    mostrarToast(`${cantidad} kg agregados`);
+    cerrarModalGramos();
+  }    
+
+
+function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntos) {
+    // Animación de zoom
+    const boton = document.querySelector(`#control-${cbarras} .boton-agregar`);
+    if (boton) {
+        boton.classList.add("animar");
+        setTimeout(() => boton.classList.remove("animar"), 200);
+    }
+
+    // Agregar al carrito
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    let existente = carrito.find(p => p.cbarras === cbarras);
+    if (existente) {
+        existente.cantidad += 1;
+    } else {
+        carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad: 1, puntos });
+    }
+
+    localStorage.setItem('carrito', JSON.stringify(carrito));
+    actualizarBotonCarrito();
+    console.log("🧪 incrementarCantidad ejecutada para:", cbarras);
+
+}
+
+
+</script>
+
+
+
+
+{% endblock %}
