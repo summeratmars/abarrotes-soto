@@ -244,62 +244,32 @@ def confirmacion():
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
+    # Solo enviar notificación a Telegram
     try:
-        now = datetime.now().strftime("%d-%m-%Y_%H-%M-%S")
-        ruta_tickets = "/tmp/tickets"
-        os.makedirs(ruta_tickets, exist_ok=True)
-        nombre_archivo = f"pedido_{now}.txt"
-        ruta_completa = os.path.join(ruta_tickets, nombre_archivo)
+        from telegram_notifier import send_telegram_message
 
-        # 1. Crear el archivo .txt
-        with open(ruta_completa, "w", encoding="utf-8") as f:
-            f.write("🛎️ NUEVO PEDIDO RECIBIDO 🛒\n\n")
-            f.write(f"👤 Cliente: {nombre}\n")
-            f.write(f"📍 Dirección: {direccion}\n")
-            f.write(f"🏘️ Colonia: {colonia}\n")
-            f.write(f"📞 Teléfono: {telefono}\n\n")
-            f.write("🧾 Productos:\n")
-            for p in carrito:
-                linea = f"- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}"
-                f.write(linea + "\n")
-            f.write(f"\n💳 Pago: {pago}\n")
-            f.write(f"💰 Total: ${total:.2f}\n")
-            if ahorro > 0:
-                f.write(f"💸 Ahorro: ${ahorro:.2f}\n")
-            f.write(f"\n📅 Fecha: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
-
-        # 2. Subirlo a Google Drive
-        subir_a_drive(ruta_completa, nombre_archivo, "12jHX99skYS4usGGxn3IKJ642Ehe7dZYN")
-
-        # 3. Enviar notificación a Telegram
-        try:
-            from telegram_notifier import send_telegram_message
-
-            mensaje = f"""<b>🛒 NUEVO PEDIDO</b>\n\n
+        mensaje = f"""<b>🛒 NUEVO PEDIDO</b>\n\n
 <b>Cliente:</b> {nombre}
 <b>Dirección:</b> {direccion}
 <b>Colonia:</b> {colonia}
 <b>Teléfono:</b> {telefono}\n
 <b>Productos:</b>"""
 
-            for p in carrito:
-                mensaje += f"\n- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}"
+        for p in carrito:
+            mensaje += f"\n- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}"
 
-            mensaje += f"""\n\n<b>Método de pago:</b> {pago}
+        mensaje += f"""\n\n<b>Método de pago:</b> {pago}
 <b>Total:</b> ${total:.2f}"""
 
-            if ahorro > 0:
-                mensaje += f"\n<b>Ahorro:</b> ${ahorro:.2f}"
+        if ahorro > 0:
+            mensaje += f"\n<b>Ahorro:</b> ${ahorro:.2f}"
 
-            mensaje += f"\n\n<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        mensaje += f"\n\n<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"
 
-            send_telegram_message(mensaje)
-
-        except Exception as e:
-            print(f"❌ Error al enviar notificación a Telegram: {e}")
+        send_telegram_message(mensaje)
 
     except Exception as e:
-        print("❌ Error al generar archivo de ticket:", e)
+        print(f"❌ Error al enviar notificación a Telegram: {e}")
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
