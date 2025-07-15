@@ -1,5 +1,6 @@
 import requests
 import os
+import json
 
 # Obtener token y chat_id desde variables de entorno
 def send_telegram_message(message):
@@ -20,7 +21,11 @@ def send_telegram_message(message):
             "parse_mode": "HTML"
         }
 
-        response = requests.post(url, data=payload)
+        # Convertir a formato JSON para headers
+        headers = {'Content-Type': 'application/json'}
+        json_payload = json.dumps(payload)
+
+        response = requests.post(url, data=json_payload, headers=headers)
 
         if response.status_code == 200:
             print("✅ Notificación enviada a Telegram")

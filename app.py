@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from email.mime.text import MIMEText
 from flask import session  # ✅ necesario para usar sesiones
-from datetime import datetime
+from datetime import datetime, timezone
+import pytz
 from unidecode import unidecode
 from collections import defaultdict
 from werkzeug.utils import secure_filename
@@ -13,6 +14,9 @@ import os
 import csv
 import shutil
 import secrets
+
+# Zona horaria de México
+mexico_timezone = pytz.timezone('America/Mexico_City')
 
 
 app = Flask(__name__)
@@ -241,10 +245,13 @@ def confirmacion():
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
+    # Obtener fecha y hora en formato de México
+    fecha_hora_mx = datetime.now(mexico_timezone).strftime('%d/%m/%Y %H:%M')
+
     # Guardar el pedido en CSV
     try:
         pedido_id = str(int(datetime.now().timestamp()))
-        fecha = datetime.now().strftime('%d/%m/%Y %H:%M')
+        fecha = fecha_hora_mx
 
         # Crear archivo si no existe
         if not os.path.exists("pedidos.csv"):
@@ -283,6 +290,10 @@ def confirmacion():
     try:
         from telegram_notifier import send_telegram_message
 
+        # Crear enlace de WhatsApp
+        telefono_limpio = telefono.replace(" ", "").replace("-", "")
+        enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
+
         mensaje = f"""<b>🛒 NUEVO PEDIDO</b>\n\n
 <b>Cliente:</b> {nombre}
 <b>Dirección:</b> {direccion}
@@ -299,7 +310,10 @@ def confirmacion():
         if ahorro > 0:
             mensaje += f"\n<b>Ahorro:</b> ${ahorro:.2f}"
 
-        mensaje += f"\n\n<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        mensaje += f"\n\n<b>Fecha:</b> {fecha_hora_mx}"
+
+        # Agregar enlace de WhatsApp
+        mensaje += f"\n\n<b>Contactar por WhatsApp:</b> <a href=\"{enlace_whatsapp}\">Abrir chat</a>"
 
         send_telegram_message(mensaje)
 
@@ -724,12 +738,24 @@ def admin_pedido_estado(pedido_id, nuevo_estado):
 
                 from telegram_notifier import send_telegram_message
                 cliente = pedido.get("cliente", {})
+
+                # Obtener fecha y hora en formato de México
+                fecha_hora_mx = datetime.now(mexico_timezone).strftime('%d/%m/%Y %H:%M')
+
+                # Crear enlace de WhatsApp
+                telefono = cliente.get('telefono', '')
+                telefono_limpio = telefono.replace(" ", "").replace("-", "")
+                enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
+
                 mensaje = f"""<b>🔄 PEDIDO {nuevo_estado.upper()}</b>\n\n
 <b>Cliente:</b> {cliente.get('nombre', 'N/A')}
 <b>Dirección:</b> {cliente.get('direccion', 'N/A')}
-<b>Teléfono:</b> {cliente.get('telefono', 'N/A')}\n
+<b>Teléfono:</b> {telefono}\n
 <b>Total:</b> ${pedido.get('total', 0):.2f}\n
-<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"""
+<b>Fecha:</b> {fecha_hora_mx}"""
+
+                # Agregar enlace de WhatsApp
+                mensaje += f"\n\n<b>Contactar por WhatsApp:</b> <a href=\"{enlace_whatsapp}\">Abrir chat</a>"
 
                 send_telegram_message(mensaje)
         except Exception as e:
