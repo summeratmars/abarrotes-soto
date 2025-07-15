@@ -3,9 +3,6 @@ from email.mime.text import MIMEText
 from flask import session  # ✅ necesario para usar sesiones
 from datetime import datetime
 from unidecode import unidecode
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 from functools import wraps
@@ -244,7 +241,45 @@ def confirmacion():
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
-    # Solo enviar notificación a Telegram
+    # Guardar el pedido en CSV
+    try:
+        pedido_id = str(int(datetime.now().timestamp()))
+        fecha = datetime.now().strftime('%d/%m/%Y %H:%M')
+
+        # Crear archivo si no existe
+        if not os.path.exists("pedidos.csv"):
+            with open("pedidos.csv", "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["id", "fecha", "nombre", "direccion", "colonia", "telefono", "metodo_pago", "total", "estado"])
+
+        # Guardar datos del pedido
+        with open("pedidos.csv", "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([pedido_id, fecha, nombre, direccion, colonia, telefono, pago, total, "Pendiente"])
+
+        # Guardar detalle del pedido
+        detalle_filename = f"pedido_{pedido_id}_detalle.json"
+        with open(detalle_filename, "w", encoding="utf-8") as f:
+            json.dump({
+                "id": pedido_id,
+                "fecha": fecha,
+                "cliente": {
+                    "nombre": nombre,
+                    "direccion": direccion,
+                    "colonia": colonia,
+                    "telefono": telefono,
+                    "numero_cliente": numero_cliente
+                },
+                "productos": carrito,
+                "metodo_pago": pago,
+                "total": total,
+                "ahorro": ahorro
+            }, indent=2)
+
+    except Exception as e:
+        print(f"❌ Error al guardar pedido: {e}")
+
+    # Enviar notificación a Telegram
     try:
         from telegram_notifier import send_telegram_message
 
@@ -287,23 +322,7 @@ def es_movil():
     agente = request.user_agent.string.lower()
     return any(x in agente for x in ['iphone', 'android', 'blackberry', 'windows phone'])
 
-def subir_a_drive(ruta_local, nombre_archivo, carpeta_drive_id):
-    SCOPES = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_INFO = json.loads(os.environ['GOOGLE_SERVICE_ACCOUNT_JSON'])
-    creds = service_account.Credentials.from_service_account_info(SERVICE_ACCOUNT_INFO, scopes=SCOPES)
 
-    service = build('drive', 'v3', credentials=creds)
-
-    file_metadata = {
-        'name': nombre_archivo,
-        'parents': [carpeta_drive_id]
-    }
-    media = MediaFileUpload(ruta_local, mimetype='text/plain')
-
-    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-    print(f"📤 Archivo subido a Drive con ID: {file.get('id')}")
-
-# Rutas de administración
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
@@ -338,17 +357,41 @@ def admin_dashboard():
             if total_clientes < 0:
                 total_clientes = 0
 
-    # Ejemplo de pedidos pendientes (en un sistema real, esto vendría de la base de datos)
+    # Obtener pedidos pendientes y últimos pedidos
     pedidos_pendientes = 0
+    ultimos_pedidos = []
+    ventas_totales = 0
 
-    # Ejemplo de ventas del mes (en un sistema real, esto vendría de la base de datos)
-    ventas_mes = "0.00"
+    if os.path.exists("pedidos.csv"):
+        with open("pedidos.csv", "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            pedidos = list(reader)
+
+            # Contar pedidos pendientes
+            pedidos_pendientes = sum(1 for p in pedidos if p["estado"] == "Pendiente")
+
+            # Obtener los últimos 5 pedidos
+            ultimos_pedidos = sorted(pedidos, key=lambda x: x["fecha"], reverse=True)[:5]
+            ultimos_pedidos = [{
+                "cliente": p["nombre"],
+                "fecha": p["fecha"],
+                "total": p["total"],
+                "estado": p["estado"]
+            } for p in ultimos_pedidos]
+
+            # Calcular ventas totales (solo pedidos entregados)
+            for p in pedidos:
+                if p["estado"] == "Entregado":
+                    try:
+                        ventas_totales += float(p["total"])
+                    except (ValueError, TypeError):
+                        pass
+
+    # Formatear ventas del mes
+    ventas_mes = f"{ventas_totales:.2f}"
 
     # Productos con bajo stock (menos de 5 unidades)
     productos_bajo_stock = df_actual[df_actual['existencia'] < 5].to_dict(orient='records')
-
-    # Ejemplo de últimos pedidos (en un sistema real, esto vendría de la base de datos)
-    ultimos_pedidos = []
 
     return render_template('admin.html', 
                            total_productos=total_productos,
@@ -606,6 +649,94 @@ def admin_producto_eliminar(cbarras):
         df = df_nuevo
 
     return redirect(url_for('admin_productos'))
+
+@app.route('/admin/pedidos')
+@admin_required
+def admin_pedidos():
+    # Verificar si existe el archivo de pedidos
+    if not os.path.exists("pedidos.csv"):
+        # Crear archivo con encabezados si no existe
+        with open("pedidos.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["id", "fecha", "nombre", "direccion", "colonia", "telefono", "metodo_pago", "total", "estado"])
+        pedidos = []
+    else:
+        # Leer pedidos del archivo CSV
+        pedidos = []
+        with open("pedidos.csv", "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                pedidos.append(row)
+
+        # Ordenar por fecha descendente (más recientes primero)
+        pedidos.reverse()
+
+    return render_template('admin_pedidos.html', pedidos=pedidos)
+
+@app.route('/admin/pedidos/detalle/<pedido_id>')
+@admin_required
+def admin_pedido_detalle(pedido_id):
+    # Buscar el archivo de detalles del pedido
+    detalle_filename = f"pedido_{pedido_id}_detalle.json"
+
+    if not os.path.exists(detalle_filename):
+        flash("No se encontró el detalle del pedido")
+        return redirect(url_for('admin_pedidos'))
+
+    # Cargar detalles del pedido
+    with open(detalle_filename, "r", encoding="utf-8") as f:
+        pedido = json.load(f)
+
+    return render_template('admin_pedido_detalle.html', pedido=pedido)
+
+@app.route('/admin/pedidos/estado/<pedido_id>/<nuevo_estado>')
+@admin_required
+def admin_pedido_estado(pedido_id, nuevo_estado):
+    # Verificar que el estado sea válido
+    estados_validos = ["Pendiente", "En proceso", "Enviado", "Entregado", "Cancelado"]
+    if nuevo_estado not in estados_validos:
+        flash("Estado no válido")
+        return redirect(url_for('admin_pedidos'))
+
+    # Actualizar el estado en el archivo CSV
+    pedidos = []
+    with open("pedidos.csv", "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if row["id"] == pedido_id:
+                row["estado"] = nuevo_estado
+            pedidos.append(row)
+
+    # Escribir de nuevo el archivo CSV
+    with open("pedidos.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["id", "fecha", "nombre", "direccion", "colonia", "telefono", "metodo_pago", "total", "estado"])
+        writer.writeheader()
+        writer.writerows(pedidos)
+
+    # Notificar por Telegram si se marca como enviado o entregado
+    if nuevo_estado in ["Enviado", "Entregado"]:
+        try:
+            # Cargar datos del pedido
+            detalle_filename = f"pedido_{pedido_id}_detalle.json"
+            if os.path.exists(detalle_filename):
+                with open(detalle_filename, "r", encoding="utf-8") as f:
+                    pedido = json.load(f)
+
+                from telegram_notifier import send_telegram_message
+                cliente = pedido.get("cliente", {})
+                mensaje = f"""<b>🔄 PEDIDO {nuevo_estado.upper()}</b>\n\n
+<b>Cliente:</b> {cliente.get('nombre', 'N/A')}
+<b>Dirección:</b> {cliente.get('direccion', 'N/A')}
+<b>Teléfono:</b> {cliente.get('telefono', 'N/A')}\n
+<b>Total:</b> ${pedido.get('total', 0):.2f}\n
+<b>Fecha:</b> {datetime.now().strftime('%d/%m/%Y %H:%M')}"""
+
+                send_telegram_message(mensaje)
+        except Exception as e:
+            print(f"❌ Error al enviar notificación de actualización: {e}")
+
+    flash(f"Estado del pedido actualizado a {nuevo_estado}")
+    return redirect(url_for('admin_pedidos'))
 
 @app.route('/logout')
 def logout():
