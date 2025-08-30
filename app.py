@@ -90,7 +90,8 @@ def index():
         productos["precio_base"] = productos.apply(lambda x: x["precio_venta2"] if x["precio_venta2"] > 0 else x["precio_venta"], axis=1)
         productos = productos.sort_values(by="precio_base", ascending=False)
 
-    departamentos = sorted(df["nombre_dep"].dropna().unique())
+    # Aseguramos que todos los departamentos sean cadenas (evita error float.upper en plantilla móvil)
+    departamentos = sorted([str(x) for x in df["nombre_dep"].dropna().unique()])
     categorias = sorted(productos["nombre_categoria"].dropna().unique()) if departamento else []
 
     productos_dict = productos.to_dict(orient="records")

@@ -304,7 +304,7 @@
         <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%; background: #fff3e0;">
             <div style="padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
             <div style="font-size: 36px; margin-bottom: 10px;">{{ icono }}</div>
-            <div style="font-weight: bold; color: #b30000; text-align: center;">Ver más de {{ dep.upper() }}</div>
+            <div style="font-weight: bold; color: #b30000; text-align: center;">Ver más de {{ (dep|string).upper() }}</div>
             </div>
         </div>
         </a>
