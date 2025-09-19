@@ -4,6 +4,9 @@
 <div style="max-width: 800px; margin: auto; padding: 20px;">
     <div class="check" style="font-size: 100px; color: green;">✅</div>
     <h1 style="color: #2e7d32; margin-bottom: 10px;">¡Pedido recibido correctamente!</h1>
+    {% if pedido_id %}
+    <p style="font-size:1.2em;color:#b30000;font-weight:bold;">Tu número de pedido es: #{{ pedido_id }}</p>
+    {% endif %}
     <p>Gracias por tu compra, {{ nombre }}.</p>
 
     <div class="detalle" style="

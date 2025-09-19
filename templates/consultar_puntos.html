@@ -1,0 +1,32 @@
+{% extends base_template %}
+{% block contenido %}
+<div style="max-width:400px;margin:auto;padding:32px 0;">
+  <h2 style="color:#b30000;text-align:center;">Consultar puntos monedero</h2>
+  <form method="post" style="margin-top:24px;background:#fff;padding:24px 18px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+    <label for="busqueda" style="font-weight:bold;">Teléfono o número de cliente:</label>
+    <input type="text" name="busqueda" id="busqueda" placeholder="Ej. 5522334455 o 5020003" style="width:100%;padding:8px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;">
+    <button type="submit" style="width:100%;background:#b30000;color:#fff;font-weight:bold;padding:10px 0;border:none;border-radius:8px;font-size:1.1rem;">Consultar</button>
+  </form>
+  {% if puntos is not none %}
+    <div style="margin-top:24px;text-align:center;font-size:1.2em;color:#388e3c;font-weight:bold;">
+      {% if nombre_mascara %}
+        <div style="font-size:1.3em;color:#b30000;letter-spacing:2px;">{{ nombre_mascara }}</div>
+      {% endif %}
+      <div>Puntos lealtad: {{ puntos }}</div>
+      <span style="font-size:1em;color:#333;font-weight:normal;">Equivalente en pesos: 
+        {% if pesos is not none %}
+          ${{ '%.2f'|format(pesos) }}
+        {% else %}
+          No disponible
+        {% endif %}
+      </span>
+      <div style="margin-top:28px;">
+        <a href="/" style="display:inline-block;padding:10px 28px;background:#b30000;color:#fff;font-weight:bold;border-radius:8px;text-decoration:none;font-size:1.1em;">Comprar ahora</a>
+      </div>
+    </div>
+  {% endif %}
+  {% if error %}
+    <div style="margin-top:18px;color:#b30000;text-align:center;font-weight:bold;">{{ error }}</div>
+  {% endif %}
+</div>
+{% endblock %}

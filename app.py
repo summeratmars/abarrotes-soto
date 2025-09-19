@@ -1,26 +1,32 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from email.mime.text import MIMEText
-from flask import session  # ✅ necesario para usar sesiones
 from datetime import datetime, timezone
-import pytz
 from unidecode import unidecode
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 from functools import wraps
 import smtplib
 import pandas as pd
+from db_utils import get_db_connection, obtener_productos_sucursal, guardar_pedido_db
+from routes_imagenes import imagenes_bp
 import json
 import os
 import csv
 import shutil
 import secrets
+import pytz
 
 # Zona horaria de México
 mexico_timezone = pytz.timezone('America/Mexico_City')
 
 
+
+import os
 app = Flask(__name__)
-app.secret_key = 'mexico'  # puede ser cualquier texto, pero debe estar
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'cambia_esto_en_produccion')  # Usa variable de entorno
+
+# Registrar blueprints
+app.register_blueprint(imagenes_bp)
 
 # Configuración para subida de archivos
 UPLOAD_FOLDER = os.path.join('static', 'images')
@@ -30,13 +36,14 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Asegurar que la carpeta de upload existe
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Credenciales de administrador (en un entorno real, usar hashing de contraseñas y almacenamiento seguro)
+# Credenciales de administrador (usa variables de entorno en producción)
 ADMIN_CREDENTIALS = {
-    'admin': 'abarrotessoto2023',
-    'manager': 'manager2023'
+    'admin': os.environ.get('ADMIN_PASSWORD', ''),
+    'manager': os.environ.get('MANAGER_PASSWORD', '')
 }
 
-df = pd.read_excel("productos.xlsx")
+
+
 
 def normalizar(texto):
     if not isinstance(texto, str):
@@ -57,53 +64,46 @@ def admin_required(f):
     return decorated_function
 
 
+
 @app.route('/')
 def index():
     plantilla = 'base_movil.html' if es_movil() else 'base_escritorio.html'
-
     query = request.args.get("q", "")
     departamento = request.args.get("departamento", "")
     categoria = request.args.get("categoria", "")
     orden = request.args.get("orden", "")
 
-    productos = df[df["existencia"] >= 1].copy()
+    productos = obtener_productos_sucursal(
+        departamento=departamento if departamento else None,
+        categoria=categoria if categoria else None,
+        query=query if query else None,
+        orden=orden if orden else None
+    )
 
+    # Obtener departamentos y categorías únicos desde la base de datos
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT nombre_dep FROM departamento WHERE nombre_dep IS NOT NULL")
+    departamentos = sorted([str(x[0]) if isinstance(x, (list, tuple)) else str(x) for x in cursor.fetchall()])
+    categorias = []
     if departamento:
-        productos = productos[productos["nombre_dep"] == departamento]
-    if categoria:
-        productos = productos[productos["nombre_categoria"] == categoria]
-    if query:
-        palabra = normalizar(query)
-
-        productos = productos[productos.apply(lambda p: (
-            palabra in normalizar(p["nombre_producto"]) or
-            palabra in normalizar(str(p.get("nombre_categoria", ""))) or
-            palabra in normalizar(str(p.get("nombre_dep", "")))
-        ), axis=1)]
-
-    if orden == "nombre_asc":
-        productos = productos.sort_values(by="nombre_producto")
-    elif orden == "precio_asc":
-        productos["precio_base"] = productos.apply(lambda x: x["precio_venta2"] if x["precio_venta2"] > 0 else x["precio_venta"], axis=1)
-        productos = productos.sort_values(by="precio_base")
-    elif orden == "precio_desc":
-        productos["precio_base"] = productos.apply(lambda x: x["precio_venta2"] if x["precio_venta2"] > 0 else x["precio_venta"], axis=1)
-        productos = productos.sort_values(by="precio_base", ascending=False)
-
-    # Aseguramos que todos los departamentos sean cadenas (evita error float.upper en plantilla móvil)
-    departamentos = sorted([str(x) for x in df["nombre_dep"].dropna().unique()])
-    categorias = sorted(productos["nombre_categoria"].dropna().unique()) if departamento else []
-
-    productos_dict = productos.to_dict(orient="records")
+        cursor.execute("SELECT DISTINCT nombre_categoria FROM categoria WHERE nombre_categoria IS NOT NULL AND uuid_departamento = (SELECT uuid_departamento FROM departamento WHERE nombre_dep = %s LIMIT 1)", (departamento,))
+        categorias = sorted([str(x[0]) if isinstance(x, (list, tuple)) else str(x) for x in cursor.fetchall()])
+    cursor.close()
+    conn.close()
 
     # Agrupar productos por departamento
     productos_por_departamento = defaultdict(list)
-    for p in productos_dict:
-        productos_por_departamento[p["nombre_dep"]].append(p)
+    for p in productos:
+        try:
+            dep = p['nombre_departamento'] if p['nombre_departamento'] else 'Sin departamento'
+        except (KeyError, TypeError):
+            dep = 'Sin departamento'
+        productos_por_departamento[dep].append(p)
 
     return render_template("index.html",
                     base_template=plantilla,
-                    productos=productos_dict,
+                    productos=productos,
                     productos_por_departamento=productos_por_departamento,
                     query=query,
                     departamento=departamento,
@@ -156,6 +156,11 @@ def checkout():
             session["total"] = total
             session["ahorro"] = ahorro
 
+            # Guardar pedido como cotización en la base de datos
+            from db_utils import guardar_cotizacion_web
+            folio, uuid_cotizacion = guardar_cotizacion_web(carrito)
+            session["folio"] = folio
+            session["uuid_cotizacion"] = uuid_cotizacion
 
             return redirect("/confirmacion")
 
@@ -168,24 +173,21 @@ def checkout():
 def monedero():
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
+
     if request.method == "POST":
         nombre = request.form.get("nombre", "").strip()
         telefono = request.form.get("telefono", "").strip()
-
-        numero_cliente = generar_numero_cliente()
-
-        with open("clientes.csv", "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            if f.tell() == 0:
-                writer.writerow(["cliente_id", "nombre", "telefono"])
-            writer.writerow([numero_cliente, nombre, telefono])
-
-        enviar_correo(nombre, telefono, numero_cliente)
-        print(f"Registrado: {numero_cliente} - {nombre} - {telefono}")
-
-        return render_template("monedero.html",
-                               mensaje=f"✅ Cliente registrado correctamente. Tu número de cliente es: {numero_cliente}",
-                               base_template=plantilla_base)
+        from db_utils import registrar_cliente_monedero
+        resultado, error = registrar_cliente_monedero(nombre, telefono)
+        if error:
+            mensaje = f"❌ {error}"
+            return render_template("monedero.html", mensaje=mensaje, base_template=plantilla_base)
+        else:
+            numero_cliente = resultado['vCodigoCliente']
+            # enviar_correo(nombre, telefono, numero_cliente)  # Opcional: descomentar si se requiere
+            print(f"Registrado: {numero_cliente} - {nombre} - {telefono}")
+            mensaje = f"✅ Cliente registrado correctamente. Tu número de cliente es: {numero_cliente}"
+            return render_template("monedero.html", mensaje=mensaje, base_template=plantilla_base)
 
     return render_template("monedero.html", mensaje=None, base_template=plantilla_base)
 
@@ -265,24 +267,7 @@ def confirmacion():
             writer = csv.writer(f)
             writer.writerow([pedido_id, fecha, nombre, direccion, colonia, telefono, pago, total, "Pendiente"])
 
-        # Guardar detalle del pedido
-        detalle_filename = f"pedido_{pedido_id}_detalle.json"
-        with open(detalle_filename, "w", encoding="utf-8") as f:
-            json.dump({
-                "id": pedido_id,
-                "fecha": fecha,
-                "cliente": {
-                    "nombre": nombre,
-                    "direccion": direccion,
-                    "colonia": colonia,
-                    "telefono": telefono,
-                    "numero_cliente": numero_cliente
-                },
-                "productos": carrito,
-                "metodo_pago": pago,
-                "total": total,
-                "ahorro": ahorro
-            }, indent=2)
+        # Ya no se guarda el detalle en archivo JSON, ahora se guarda en la base de datos
 
     except Exception as e:
         print(f"❌ Error al guardar pedido: {e}")
@@ -330,7 +315,8 @@ def confirmacion():
                            pago=pago,
                            carrito=carrito,
                            total=total,
-                           ahorro=ahorro)
+                           ahorro=ahorro,
+                           pedido_id=session.get("folio"))
 
 
 def es_movil():
@@ -770,6 +756,91 @@ def logout():
     session.pop('admin_logged_in', None)
     session.pop('admin_username', None)
     return redirect(url_for('index'))
+
+# --- CONSULTAR PUNTOS MONEDERO ---
+@app.route("/consultar_puntos", methods=["GET", "POST"])
+def consultar_puntos():
+    puntos = None
+    pesos = None
+    iniciales = None
+    error = None
+    nombre_completo = None
+    nombre_mascara = None
+    if request.method == "POST":
+        busqueda = request.form.get("busqueda", "").strip()
+        if not busqueda:
+            error = "Debes ingresar un teléfono o número de cliente."
+        else:
+            try:
+                from db_utils import get_db_connection
+                conn = get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+                # Buscar por idcliente o teléfono
+                query = ("SELECT nombre, apellidos, puntos FROM cliente WHERE is_active=1 AND (idcliente = %s OR telefono = %s OR vCodigoCliente = %s) LIMIT 1")
+                cursor.execute(query, (busqueda, busqueda, busqueda))
+                row = cursor.fetchone()
+                if row:
+                    # row puede ser un dict o una tupla dependiendo del cursor
+                    if isinstance(row, dict):
+                        nombre = row.get('nombre', '')
+                        apellidos = row.get('apellidos', '')
+                        puntos_val = row.get('puntos')
+                    else:
+                        nombre = row[0] if len(row) > 0 else ''
+                        apellidos = row[1] if len(row) > 1 else ''
+                        puntos_val = row[2] if len(row) > 2 else None
+                    # Nombre completo
+                    nombre_completo = f"{nombre} {apellidos}".strip()
+                    # Máscara tipo M***** S*** J*****
+                    def mascarar_parte(parte):
+                        parte = parte.strip()
+                        if not parte:
+                            return ''
+                        partes = parte.split()
+                        resultado = []
+                        for p in partes:
+                            if len(p) == 1:
+                                resultado.append(p.upper())
+                            else:
+                                resultado.append(p[0].upper() + '*' * (len(p)-1))
+                        return ' '.join(resultado)
+                    nombre_mascara = ''
+                    if nombre:
+                        nombre_mascara += mascarar_parte(nombre)
+                    if apellidos:
+                        if nombre_mascara:
+                            nombre_mascara += ' '
+                        nombre_mascara += mascarar_parte(apellidos)
+                    # Obtener iniciales (por compatibilidad, pero ya no se usa en la vista)
+                    iniciales = ''
+                    for parte in (nombre, apellidos):
+                        if parte and isinstance(parte, str) and parte.strip():
+                            iniciales += parte.strip()[0].upper()
+                    if puntos_val is not None:
+                        if isinstance(puntos_val, (int, float)):
+                            puntos = puntos_val
+                            pesos = round(float(puntos_val) / 100, 2)
+                        elif isinstance(puntos_val, str):
+                            try:
+                                puntos_float = float(puntos_val)
+                                puntos = puntos_float
+                                pesos = round(puntos_float / 100, 2)
+                            except Exception:
+                                puntos = puntos_val
+                                pesos = None
+                        else:
+                            puntos = puntos_val
+                            pesos = None
+                    else:
+                        error = "Cliente no encontrado."
+                else:
+                    error = "Cliente no encontrado."
+                cursor.close()
+                conn.close()
+            except Exception as e:
+                error = f"Error al consultar: {e}"
+    plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
+    return render_template("consultar_puntos.html", base_template=plantilla_base, puntos=puntos, pesos=pesos, iniciales=iniciales, error=error, nombre_completo=nombre_completo, nombre_mascara=nombre_mascara)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000, debug=True)
