@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/banner.css') }}">
     <style>
         body {
             margin-top: 110px;
@@ -183,6 +184,8 @@ function mostrarToast(mensaje = "✅ Producto agregado al pedido") {
     if (sonido) sonido.play();
 }
 </script>
+
+<script src="{{ url_for('static', filename='js/banner.js') }}"></script>
 
 </body>
 </html>
