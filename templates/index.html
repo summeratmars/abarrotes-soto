@@ -188,54 +188,6 @@
 
 </style>
 
-<!-- Carrusel de Banners Publicitarios -->
-<div class="banner-container" id="bannerCarousel">
-    <div class="banner-slider">
-        <!-- Banner 1: RIFA 2026 -->
-        <a href="/rifa2026" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.jpg') }}');">
-                <div class="banner-content">
-                    <h2>🎯 RIFA 2026</h2>
-                    <p>Cada compra te acerca a ganar increíbles premios</p>
-                    <div class="countdown-timer" id="countdownTimerMobile" style="font-size: 12px; font-weight: bold; margin: 5px 0; color: #ffdd00;">
-                        ⏰ Faltan: <span class="timeLeft"></span>
-                    </div>
-                    <span class="banner-cta">CONSULTAR MIS BOLETOS</span>
-                </div>
-            </div>
-            <div class="banner-overlay">
-                <div class="banner-title">🎯 RIFA 2026</div>
-                <div class="banner-description">Cada compra te acerca a ganar increíbles premios - Sorteo: 16 enero 2026</div>
-            </div>
-        </a>
-        
-        <!-- Banner 2: Ofertas especiales -->
-        <a href="/productos?categoria=ofertas" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.jpg') }}');">
-                <div class="banner-content">
-                    <h2>🎉 OFERTAS ESPECIALES</h2>
-                    <p>Hasta 50% de descuento en productos seleccionados</p>
-                    <span class="banner-cta">Ver ofertas</span>
-                </div>
-            </div>
-            <div class="banner-overlay">
-                <div class="banner-title">🎉 OFERTAS ESPECIALES</div>
-                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
-            </div>
-        </a>
-    </div>
-    
-    <!-- Controles de navegación -->
-    <button class="banner-nav banner-prev">‹</button>
-    <button class="banner-nav banner-next">›</button>
-    
-    <!-- Indicadores -->
-    <div class="banner-indicators">
-        <div class="indicator active"></div>
-        <div class="indicator"></div>
-    </div>
-</div>
-
 <!-- Estilos de banners embebidos -->
 <style>
 .banner-ejemplo {
@@ -357,6 +309,56 @@
 
 
 {% if base_template == 'base_movil.html' and not departamento and not categoria and not query %}
+
+<!-- Carrusel de Banners Publicitarios - Versión Móvil -->
+<div class="banner-container" id="bannerCarouselMobile" style="margin-bottom: 20px;">
+    <div class="banner-slider">
+        <!-- Banner 1: RIFA 2026 -->
+        <a href="/rifa2026" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.jpg') }}');">
+                <div class="banner-content">
+                    <h2>🎯 RIFA 2026</h2>
+                    <p>Cada compra te acerca a ganar increíbles premios</p>
+                    <div class="countdown-timer" id="countdownTimerMobile" style="font-size: 12px; font-weight: bold; margin: 5px 0; color: #ffdd00;">
+                        ⏰ Faltan: <span class="timeLeft"></span>
+                    </div>
+                    <span class="banner-cta">CONSULTAR MIS BOLETOS</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">🎯 RIFA 2026</div>
+                <div class="banner-description">Cada compra te acerca a ganar increíbles premios - Sorteo: 16 enero 2026</div>
+            </div>
+        </a>
+        
+        <!-- Banner 2: Ofertas especiales -->
+        <a href="/productos?categoria=ofertas" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.jpg') }}');">
+                <div class="banner-content">
+                    <h2>🎉 OFERTAS ESPECIALES</h2>
+                    <p>Hasta 50% de descuento en productos seleccionados</p>
+                    <span class="banner-cta">Ver ofertas</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">🎉 OFERTAS ESPECIALES</div>
+                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Controles de navegación -->
+    <button class="banner-nav banner-prev">‹</button>
+    <button class="banner-nav banner-next">›</button>
+    
+    <!-- Indicadores -->
+    <div class="banner-indicators">
+        <div class="indicator active"></div>
+        <div class="indicator"></div>
+    </div>
+</div>
+
+{% endif %}
 
 
 
