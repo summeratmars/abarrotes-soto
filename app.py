@@ -234,6 +234,12 @@ def generar_numero_cliente():
     return numero_cliente
 
 
+@app.route("/rifa2026")
+def rifa2026():
+    """Página dedicada a la RIFA 2026 con toda la información"""
+    return render_template("rifa2026.html")
+
+
 @app.route("/confirmacion")
 def confirmacion():
     nombre = session.get("nombre", "Cliente")

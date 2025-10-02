@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 RIFA 2026 - Abarrotes Soto</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            font-size: 3em;
+            color: #b30000;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .countdown {
+            background: #ffdd00;
+            color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .section h2 {
+            color: #b30000;
+            border-bottom: 3px solid #b30000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .prizes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .prize {
+            background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .prize.first { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+        .prize.second { background: linear-gradient(135deg, #c0c0c0, #808080); }
+        .prize.third { background: linear-gradient(135deg, #cd7f32, #8b4513); }
+        
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border: 2px solid #b30000;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .step h3 {
+            color: #b30000;
+            margin-bottom: 15px;
+        }
+        
+        .cta-button {
+            background: #b30000;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+            display: inline-block;
+            margin: 20px 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .cta-button:hover {
+            background: #900000;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .contact-info {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .faq {
+            margin: 15px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .faq-question {
+            background: #f8f9fa;
+            padding: 15px;
+            font-weight: bold;
+            color: #b30000;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .faq-answer {
+            padding: 15px;
+            background: white;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .countdown {
+                font-size: 18px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>🎯 RIFA 2026</h1>
+            <p style="font-size: 18px; color: #666;">Cada compra te acerca a ganar increíbles premios</p>
+            
+            <div class="countdown">
+                ⏰ Tiempo restante para participar: <span id="countdownDisplay"></span>
+            </div>
+            
+            <a href="/monedero" class="cta-button">CONSULTAR MIS BOLETOS</a>
+            <a href="tel:5575251742" class="cta-button" style="background: #28a745;">📞 CONTACTAR</a>
+        </div>
+
+        <!-- SECCIÓN 1: INFORMACIÓN PRINCIPAL -->
+        <div class="section">
+            <h2>🏆 ESTRUCTURA DE PREMIOS (10 GANADORES TOTALES)</h2>
+            <div class="prizes">
+                <div class="prize first">🥇 1er Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize second">🥈 2do Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize third">🥉 3er Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 4to Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 5to Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 6to Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 7mo Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 8vo Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 9no Lugar<br><small>Premio por anunciar</small></div>
+                <div class="prize">🎁 10mo Lugar<br><small>Premio por anunciar</small></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: CÓMO PARTICIPAR -->
+        <div class="section">
+            <h2>🎮 CÓMO PARTICIPAR (PASO A PASO)</h2>
+            
+            <h3 style="color: #b30000;">MÉTODO 1: COMPRAS NORMALES</h3>
+            <div class="steps">
+                <div class="step">
+                    <h3>1️⃣ COMPRA</h3>
+                    <p>Realiza compras en ABARROTES SOTO CH</p>
+                </div>
+                <div class="step">
+                    <h3>2️⃣ BOLETOS</h3>
+                    <p>Por cada $100 MXN = 1 boleto automático</p>
+                </div>
+                <div class="step">
+                    <h3>3️⃣ TICKET</h3>
+                    <p>Los boletos aparecen en tu ticket de compra</p>
+                </div>
+                <div class="step">
+                    <h3>4️⃣ ACUMULA</h3>
+                    <p>Acumula boletos hasta el 15 de enero 2026</p>
+                </div>
+            </div>
+
+            <h3 style="color: #b30000;">MÉTODO 2: SISTEMA DE REFERIDOS</h3>
+            <div class="steps">
+                <div class="step">
+                    <h3>1️⃣ CÓDIGO</h3>
+                    <p>Solicita tu código de referido personal</p>
+                </div>
+                <div class="step">
+                    <h3>2️⃣ COMPARTE</h3>
+                    <p>Comparte tu código con amigos y familiares</p>
+                </div>
+                <div class="step">
+                    <h3>3️⃣ GANEN</h3>
+                    <p>Primera compra de $100+: ambos ganan 1 boleto extra</p>
+                </div>
+                <div class="step">
+                    <h3>4️⃣ ILIMITADO</h3>
+                    <p>Sin límite de referidos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: DETALLES DEL SORTEO -->
+        <div class="section">
+            <h2>🎪 DETALLES DEL SORTEO</h2>
+            <div class="contact-info">
+                <p><strong>📅 Fecha:</strong> 16 de enero 2026, 21:00 hrs</p>
+                <p><strong>📍 Lugar:</strong> ABARROTES SOTO CH - Tienda Principal</p>
+                <p><strong>🎲 Método:</strong> Sorteo electrónico transparente</p>
+                <p><strong>📺 Transmisión en vivo:</strong> <a href="https://www.facebook.com/share/1Cqyydwaas/" target="_blank">Facebook Live</a></p>
+                <p><strong>🏆 Orden:</strong> Del 10mo al 1er lugar</p>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: TÉRMINOS Y CONDICIONES -->
+        <div class="section">
+            <h2>📋 TÉRMINOS Y CONDICIONES</h2>
+            
+            <div class="warning">
+                <strong>⚠️ ELEGIBILIDAD:</strong><br>
+                • Mayores de 18 años<br>
+                • Compras entre 30-09-2025 y 15-01-2026<br>
+                • Solo compras en ABARROTES SOTO CH<br>
+                • Empleados y familiares directos excluidos
+            </div>
+            
+            <div class="success">
+                <strong>✅ MECÁNICA:</strong><br>
+                • 1 boleto por cada $100 MXN<br>
+                • Fraccionamiento: $99 = 0 boletos, $199 = 1 boleto<br>
+                • Boletos automáticos, no transferibles<br>
+                • Sistema de referidos: solo primera compra del referido
+            </div>
+        </div>
+
+        <!-- SECCIÓN 5: PREGUNTAS FRECUENTES -->
+        <div class="section">
+            <h2>❓ PREGUNTAS FRECUENTES</h2>
+            
+            <div class="faq">
+                <div class="faq-question">¿Cómo sé cuántos boletos tengo?</div>
+                <div class="faq-answer">Si cuentas con un Monedero Electrónico podrás consultar tus boletos con el personal. Si no tienes Monedero Electrónico <a href="/monedero">regístrate gratis aquí</a>.</div>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">¿Puedo transferir mis boletos?</div>
+                <div class="faq-answer">No, los boletos no son transferibles.</div>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">¿Qué pasa si pierdo mi ticket?</div>
+                <div class="faq-answer">Procura tomarle una foto a tu boleto porque de no ser así, quedaría anulado.</div>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">¿Cómo funciona el sistema de referidos?</div>
+                <div class="faq-answer">Por cada amigo/familiar que recomiendes, obtienen tú y él 1 boleto adicional. Necesitas tu número de referido (puedes solicitarlo sin costo) y compartirlo con la persona recomendada para que lo entregue al personal al momento de su compra.</div>
+            </div>
+            
+            <div class="faq">
+                <div class="faq-question">¿Qué pasa si no puedo asistir al sorteo?</div>
+                <div class="faq-answer">Los resultados serán publicados en WhatsApp, Facebook y tienda física.</div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 6: CONTACTO -->
+        <div class="section">
+            <h2>📞 INFORMACIÓN DE CONTACTO</h2>
+            <div class="contact-info">
+                <p><strong>📞 Teléfono:</strong> <a href="tel:5575251742">5575251742</a></p>
+                <p><strong>🕐 Horarios:</strong> 8:00 AM a 11:00 PM</p>
+                <p><strong>🌐 Monedero Electrónico:</strong> <a href="/monedero">Registrarse gratis</a></p>
+                <p><strong>📱 Facebook:</strong> <a href="https://www.facebook.com/share/1Cqyydwaas/" target="_blank">Abarrotes Soto</a></p>
+            </div>
+        </div>
+
+        <!-- CALL TO ACTION FINAL -->
+        <div class="section" style="text-align: center; background: linear-gradient(135deg, #b30000, #ff4444); color: white;">
+            <h2 style="color: white; border-bottom: 3px solid white;">🎯 ¡PARTICIPA AHORA!</h2>
+            <p style="font-size: 18px;">¡Cada compra te acerca más a ganar increíbles premios!</p>
+            <a href="/monedero" class="cta-button" style="background: white; color: #b30000;">CONSULTAR MIS BOLETOS</a>
+            <a href="/" class="cta-button" style="background: #ffdd00; color: #333;">IR A COMPRAR</a>
+        </div>
+    </div>
+
+    <script>
+        // Contador regresivo
+        function updateCountdown() {
+            const targetDate = new Date('2026-01-16T21:00:00-06:00').getTime();
+            const now = new Date().getTime();
+            const timeLeft = targetDate - now;
+            
+            if (timeLeft > 0) {
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                
+                document.getElementById('countdownDisplay').textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+            } else {
+                document.getElementById('countdownDisplay').textContent = '¡SORTEO REALIZADO!';
+            }
+        }
+        
+        // Actualizar cada segundo
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        // FAQ Toggle
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', function() {
+                const answer = this.nextElementSibling;
+                answer.style.display = answer.style.display === 'none' ? 'block' : 'none';
+            });
+        });
+
+        // Ocultar respuestas inicialmente
+        document.querySelectorAll('.faq-answer').forEach(answer => {
+            answer.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
