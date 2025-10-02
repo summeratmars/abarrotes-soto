@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo - Banners Publicitarios - Abarrotes Soto</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #fff;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-title {
+            text-align: center;
+            color: #b30000;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .demo-section {
+            margin-bottom: 50px;
+        }
+        
+        .demo-section h2 {
+            color: #333;
+            border-bottom: 2px solid #b30000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        /* Estilos de banners */
+        .banner-container {
+            position: relative;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .banner-slider {
+            display: flex;
+            transition: transform 0.8s ease-in-out;
+            width: 100%;
+        }
+
+        .banner-slide {
+            min-width: 100%;
+            position: relative;
+            display: block;
+            text-decoration: none;
+        }
+
+        .banner-slide img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .banner-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            color: white;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .banner-slide:hover .banner-overlay {
+            transform: translateY(0);
+        }
+
+        .banner-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .banner-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .banner-indicators {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .indicator.active {
+            background: white;
+        }
+
+        .banner-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+            z-index: 10;
+        }
+
+        .banner-nav:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .banner-prev {
+            left: 15px;
+        }
+
+        .banner-next {
+            right: 15px;
+        }
+
+        .banner-ejemplo {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-radius: 15px;
+        }
+
+        .banner-ejemplo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+            z-index: 1;
+        }
+
+        .banner-ejemplo h2,
+        .banner-ejemplo p,
+        .banner-ejemplo .banner-cta {
+            position: relative;
+            z-index: 2;
+        }
+
+        .banner-ejemplo h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+        }
+
+        .banner-ejemplo p {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+
+        .banner-cta {
+            background: #ff4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .banner-cta:hover {
+            transform: scale(1.05);
+        }
+
+        .banner-ofertas {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+
+        .banner-frescos {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+
+        .banner-despensa {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+        }
+
+        .banner-bebidas {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .banner-dulceria {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+        }
+
+        .banner-limpieza {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+        }
+
+        @media (max-width: 768px) {
+            .banner-container {
+                margin: 0 auto 20px auto;
+                border-radius: 10px;
+            }
+            
+            .banner-slide img,
+            .banner-ejemplo {
+                height: 150px;
+            }
+            
+            .banner-overlay {
+                padding: 15px;
+            }
+            
+            .banner-title,
+            .banner-ejemplo h2 {
+                font-size: 20px;
+            }
+            
+            .banner-description,
+            .banner-ejemplo p {
+                font-size: 12px;
+            }
+            
+            .banner-cta {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .banner-nav {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+            }
+            
+            .banner-prev {
+                left: 10px;
+            }
+            
+            .banner-next {
+                right: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .banner-slide img,
+            .banner-ejemplo {
+                height: 120px;
+            }
+            
+            .banner-overlay {
+                padding: 10px;
+            }
+            
+            .banner-title,
+            .banner-ejemplo h2 {
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+            
+            .banner-description,
+            .banner-ejemplo p {
+                font-size: 11px;
+                margin-bottom: 8px;
+            }
+        }
+        
+        .device-simulation {
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background: #f9f9f9;
+        }
+        
+        .mobile-sim {
+            max-width: 375px;
+            margin: 0 auto;
+        }
+        
+        .desktop-sim {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1 class="demo-title">🛒 Abarrotes Soto - Demo de Banners Publicitarios</h1>
+        
+        <div class="demo-section">
+            <h2>📱 Versión Móvil</h2>
+            <div class="device-simulation mobile-sim">
+                <div class="banner-container" id="bannerCarouselMobile">
+                    <div class="banner-slider">
+                        <a href="#ofertas" class="banner-slide">
+                            <div class="banner-ejemplo banner-ofertas">
+                                <h2>¡OFERTAS ESPECIALES!</h2>
+                                <p>Hasta 50% de descuento en productos seleccionados</p>
+                                <span class="banner-cta">Ver ofertas</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">¡OFERTAS ESPECIALES!</div>
+                                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#frescos" class="banner-slide">
+                            <div class="banner-ejemplo banner-frescos">
+                                <h2>PRODUCTOS FRESCOS</h2>
+                                <p>La mejor calidad en lácteos y productos frescos</p>
+                                <span class="banner-cta">Comprar ahora</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">PRODUCTOS FRESCOS</div>
+                                <div class="banner-description">Calidad garantizada en todos nuestros productos frescos</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#despensa" class="banner-slide">
+                            <div class="banner-ejemplo banner-despensa">
+                                <h2>DESPENSA BÁSICA</h2>
+                                <p>Todo lo que necesitas para tu hogar</p>
+                                <span class="banner-cta">Explorar</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">DESPENSA BÁSICA</div>
+                                <div class="banner-description">Completa tu despensa con nuestros productos esenciales</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#bebidas" class="banner-slide">
+                            <div class="banner-ejemplo banner-bebidas">
+                                <h2>BEBIDAS REFRESCANTES</h2>
+                                <p>Gran variedad de refrescos, aguas y jugos</p>
+                                <span class="banner-cta">Ver catálogo</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">BEBIDAS REFRESCANTES</div>
+                                <div class="banner-description">Para todos los gustos y todas las ocasiones</div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <button class="banner-nav banner-prev">‹</button>
+                    <button class="banner-nav banner-next">›</button>
+                    
+                    <div class="banner-indicators">
+                        <div class="indicator active"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>💻 Versión Escritorio</h2>
+            <div class="device-simulation desktop-sim">
+                <div class="banner-container" id="bannerCarouselDesktop">
+                    <div class="banner-slider">
+                        <a href="#ofertas" class="banner-slide">
+                            <div class="banner-ejemplo banner-ofertas">
+                                <h2>¡OFERTAS ESPECIALES!</h2>
+                                <p>Hasta 50% de descuento en productos seleccionados</p>
+                                <span class="banner-cta">Ver ofertas</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">¡OFERTAS ESPECIALES!</div>
+                                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#frescos" class="banner-slide">
+                            <div class="banner-ejemplo banner-frescos">
+                                <h2>PRODUCTOS FRESCOS</h2>
+                                <p>La mejor calidad en lácteos y productos frescos</p>
+                                <span class="banner-cta">Comprar ahora</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">PRODUCTOS FRESCOS</div>
+                                <div class="banner-description">Calidad garantizada en todos nuestros productos frescos</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#despensa" class="banner-slide">
+                            <div class="banner-ejemplo banner-despensa">
+                                <h2>DESPENSA BÁSICA</h2>
+                                <p>Todo lo que necesitas para tu hogar</p>
+                                <span class="banner-cta">Explorar</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">DESPENSA BÁSICA</div>
+                                <div class="banner-description">Completa tu despensa con nuestros productos esenciales</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#bebidas" class="banner-slide">
+                            <div class="banner-ejemplo banner-bebidas">
+                                <h2>BEBIDAS REFRESCANTES</h2>
+                                <p>Gran variedad de refrescos, aguas y jugos</p>
+                                <span class="banner-cta">Ver catálogo</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">BEBIDAS REFRESCANTES</div>
+                                <div class="banner-description">Para todos los gustos y todas las ocasiones</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#dulceria" class="banner-slide">
+                            <div class="banner-ejemplo banner-dulceria">
+                                <h2>DULCERÍA</h2>
+                                <p>Los mejores dulces y golosinas</p>
+                                <span class="banner-cta">Endulza tu día</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">DULCERÍA</div>
+                                <div class="banner-description">Dulces, chocolates y golosinas para toda la familia</div>
+                            </div>
+                        </a>
+                        
+                        <a href="#limpieza" class="banner-slide">
+                            <div class="banner-ejemplo banner-limpieza">
+                                <h2>PRODUCTOS DE LIMPIEZA</h2>
+                                <p>Mantén tu hogar impecable</p>
+                                <span class="banner-cta">Ver productos</span>
+                            </div>
+                            <div class="banner-overlay">
+                                <div class="banner-title">PRODUCTOS DE LIMPIEZA</div>
+                                <div class="banner-description">Todo lo necesario para mantener tu hogar limpio</div>
+                            </div>
+                        </a>
+                    </div>
+                    
+                    <button class="banner-nav banner-prev">‹</button>
+                    <button class="banner-nav banner-next">›</button>
+                    
+                    <div class="banner-indicators">
+                        <div class="indicator active"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                        <div class="indicator"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>ℹ️ Características</h2>
+            <ul>
+                <li><strong>Carrusel automático:</strong> Cambia cada 5 segundos</li>
+                <li><strong>Navegación manual:</strong> Flechas izquierda/derecha y puntos indicadores</li>
+                <li><strong>Responsivo:</strong> Se adapta a móviles y escritorio</li>
+                <li><strong>Touch/Swipe:</strong> Soporte para gestos táctiles</li>
+                <li><strong>Pausa al hover:</strong> Se pausa al pasar el mouse</li>
+                <li><strong>Enlaces funcionales:</strong> Cada banner lleva a una sección específica</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="static/js/banner.js"></script>
+    <script>
+        // Inicializar los carruseles de demo
+        document.addEventListener('DOMContentLoaded', function() {
+            new BannerCarousel('bannerCarouselMobile');
+            new BannerCarousel('bannerCarouselDesktop');
+        });
+        
+        // Clase simplificada para el demo
+        class BannerCarousel {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                if (!this.container) return;
+                
+                this.slider = this.container.querySelector('.banner-slider');
+                this.slides = this.container.querySelectorAll('.banner-slide');
+                this.indicators = this.container.querySelectorAll('.indicator');
+                this.prevBtn = this.container.querySelector('.banner-prev');
+                this.nextBtn = this.container.querySelector('.banner-next');
+                
+                this.currentSlide = 0;
+                this.totalSlides = this.slides.length;
+                this.autoPlayInterval = null;
+                this.autoPlayDelay = 5000;
+                
+                this.init();
+            }
+            
+            init() {
+                if (this.totalSlides <= 1) return;
+                
+                if (this.prevBtn) {
+                    this.prevBtn.addEventListener('click', () => this.prevSlide());
+                }
+                
+                if (this.nextBtn) {
+                    this.nextBtn.addEventListener('click', () => this.nextSlide());
+                }
+                
+                this.indicators.forEach((indicator, index) => {
+                    indicator.addEventListener('click', () => this.goToSlide(index));
+                });
+                
+                this.container.addEventListener('mouseenter', () => this.pauseAutoPlay());
+                this.container.addEventListener('mouseleave', () => this.startAutoPlay());
+                
+                this.addTouchSupport();
+                this.startAutoPlay();
+                this.updateIndicators();
+            }
+            
+            goToSlide(slideIndex) {
+                this.currentSlide = slideIndex;
+                const translateX = -slideIndex * 100;
+                this.slider.style.transform = `translateX(${translateX}%)`;
+                this.updateIndicators();
+            }
+            
+            nextSlide() {
+                this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+                this.goToSlide(this.currentSlide);
+            }
+            
+            prevSlide() {
+                this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+                this.goToSlide(this.currentSlide);
+            }
+            
+            updateIndicators() {
+                this.indicators.forEach((indicator, index) => {
+                    indicator.classList.toggle('active', index === this.currentSlide);
+                });
+            }
+            
+            startAutoPlay() {
+                if (this.totalSlides <= 1) return;
+                
+                this.autoPlayInterval = setInterval(() => {
+                    this.nextSlide();
+                }, this.autoPlayDelay);
+            }
+            
+            pauseAutoPlay() {
+                if (this.autoPlayInterval) {
+                    clearInterval(this.autoPlayInterval);
+                    this.autoPlayInterval = null;
+                }
+            }
+            
+            addTouchSupport() {
+                let startX = 0;
+                let endX = 0;
+                
+                this.container.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX;
+                });
+                
+                this.container.addEventListener('touchend', (e) => {
+                    endX = e.changedTouches[0].clientX;
+                    this.handleSwipe(startX, endX);
+                });
+                
+                this.container.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                }, { passive: false });
+            }
+            
+            handleSwipe(startX, endX) {
+                const threshold = 50;
+                const diff = startX - endX;
+                
+                if (Math.abs(diff) > threshold) {
+                    if (diff > 0) {
+                        this.nextSlide();
+                    } else {
+                        this.prevSlide();
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>

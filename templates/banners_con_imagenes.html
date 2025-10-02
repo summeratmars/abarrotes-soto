@@ -1,0 +1,79 @@
+<!-- Ejemplo de banners con imágenes reales -->
+<!-- Reemplaza la sección de banners en index.html con esta estructura -->
+
+<!-- Carrusel de Banners con Imágenes -->
+<div class="banner-container" id="bannerCarousel">
+    <div class="banner-slider">
+        <!-- Banner 1: Ofertas especiales -->
+        <a href="/productos?categoria=ofertas" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/ofertas.jpg') }}');">
+                <div class="banner-content">
+                    <h2>¡OFERTAS ESPECIALES!</h2>
+                    <p>Hasta 50% de descuento en productos seleccionados</p>
+                    <span class="banner-cta">Ver ofertas</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">¡OFERTAS ESPECIALES!</div>
+                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+            </div>
+        </a>
+        
+        <!-- Banner 2: Productos frescos -->
+        <a href="/productos?departamento=LACTEOS" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/lacteos.jpg') }}');">
+                <div class="banner-content">
+                    <h2>PRODUCTOS FRESCOS</h2>
+                    <p>La mejor calidad en lácteos y productos frescos</p>
+                    <span class="banner-cta">Comprar ahora</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">PRODUCTOS FRESCOS</div>
+                <div class="banner-description">Calidad garantizada en todos nuestros productos frescos</div>
+            </div>
+        </a>
+        
+        <!-- Banner 3: Despensa básica -->
+        <a href="/productos?departamento=GRANOS Y CEREALES" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/granos.jpg') }}');">
+                <div class="banner-content">
+                    <h2>DESPENSA BÁSICA</h2>
+                    <p>Todo lo que necesitas para tu hogar</p>
+                    <span class="banner-cta">Explorar</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">DESPENSA BÁSICA</div>
+                <div class="banner-description">Completa tu despensa con nuestros productos esenciales</div>
+            </div>
+        </a>
+        
+        <!-- Banner 4: Bebidas -->
+        <a href="/productos?departamento=BEBIDAS" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/bebidas.jpg') }}');">
+                <div class="banner-content">
+                    <h2>BEBIDAS REFRESCANTES</h2>
+                    <p>Gran variedad de refrescos, aguas y jugos</p>
+                    <span class="banner-cta">Ver catálogo</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">BEBIDAS REFRESCANTES</div>
+                <div class="banner-description">Para todos los gustos y todas las ocasiones</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Controles de navegación -->
+    <button class="banner-nav banner-prev">‹</button>
+    <button class="banner-nav banner-next">›</button>
+    
+    <!-- Indicadores -->
+    <div class="banner-indicators">
+        <div class="indicator active"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+    </div>
+</div>

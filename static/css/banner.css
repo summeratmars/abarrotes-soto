@@ -1,0 +1,255 @@
+/* Estilos para el carrusel de banners publicitarios */
+
+.banner-container {
+    position: relative;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 30px auto;
+    overflow: hidden;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.banner-slider {
+    display: flex;
+    transition: transform 0.8s ease-in-out;
+    width: 100%;
+}
+
+.banner-slide {
+    min-width: 100%;
+    position: relative;
+    display: block;
+}
+
+.banner-slide img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+}
+
+.banner-slide .banner-imagen {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+.banner-slide .banner-imagen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+    z-index: 1;
+}
+
+.banner-slide .banner-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    z-index: 2;
+    width: 90%;
+}
+
+.banner-slide .banner-content h2 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+
+.banner-slide .banner-content p {
+    font-size: 14px;
+    margin-bottom: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+}
+
+.banner-slide .banner-cta {
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 12px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.banner-slide .banner-cta:hover {
+    transform: scale(1.05);
+}
+
+.banner-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    color: white;
+    padding: 20px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.banner-slide:hover .banner-overlay {
+    transform: translateY(0);
+}
+
+.banner-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.banner-description {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* Indicadores de puntos */
+.banner-indicators {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.indicator.active {
+    background: white;
+}
+
+/* Flechas de navegación */
+.banner-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease;
+    z-index: 10;
+}
+
+.banner-nav:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.banner-prev {
+    left: 15px;
+}
+
+.banner-next {
+    right: 15px;
+}
+
+/* Responsivo para móviles */
+@media (max-width: 768px) {
+    .banner-container {
+        margin: 0 auto 20px auto;
+        border-radius: 10px;
+    }
+    
+    .banner-slide img,
+    .banner-slide .banner-imagen {
+        height: 150px;
+    }
+    
+    .banner-overlay {
+        padding: 15px;
+    }
+    
+    .banner-title {
+        font-size: 16px;
+    }
+    
+    .banner-description {
+        font-size: 12px;
+    }
+    
+    .banner-slide .banner-content h2 {
+        font-size: 20px;
+    }
+    
+    .banner-slide .banner-content p {
+        font-size: 12px;
+    }
+    
+    .banner-slide .banner-cta {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+    
+    .banner-nav {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+    
+    .banner-prev {
+        left: 10px;
+    }
+    
+    .banner-next {
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .banner-slide img,
+    .banner-slide .banner-imagen {
+        height: 120px;
+    }
+    
+    .banner-overlay {
+        padding: 10px;
+    }
+    
+    .banner-title {
+        font-size: 14px;
+    }
+    
+    .banner-description {
+        font-size: 11px;
+    }
+    
+    .banner-slide .banner-content h2 {
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+    
+    .banner-slide .banner-content p {
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+}

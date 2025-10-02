@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/banner.css') }}">
     <style>
         body {
             margin-top: 110px;
@@ -404,6 +405,7 @@ function toggleMenu() {
 <span id="carrito-total" style="display: none;"></span>
 
 <script src="{{ url_for('static', filename='js/carrito.js') }}"></script>
+<script src="{{ url_for('static', filename='js/banner.js') }}"></script>
 
 
 </body>

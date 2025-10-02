@@ -1,0 +1,143 @@
+<!-- Banners de ejemplo para abarrotes -->
+
+<!-- Banner 1: Ofertas especiales -->
+<div class="banner-ejemplo banner-ofertas">
+    <h2>¡OFERTAS ESPECIALES!</h2>
+    <p>Hasta 50% de descuento en productos seleccionados</p>
+    <span class="banner-cta">Ver ofertas</span>
+</div>
+
+<!-- Banner 2: Productos frescos -->
+<div class="banner-ejemplo banner-frescos">
+    <h2>PRODUCTOS FRESCOS</h2>
+    <p>La mejor calidad en frutas y verduras</p>
+    <span class="banner-cta">Comprar ahora</span>
+</div>
+
+<!-- Banner 3: Despensa básica -->
+<div class="banner-ejemplo banner-despensa">
+    <h2>DESPENSA BÁSICA</h2>
+    <p>Todo lo que necesitas para tu hogar</p>
+    <span class="banner-cta">Explorar</span>
+</div>
+
+<!-- Banner 4: Bebidas -->
+<div class="banner-ejemplo banner-bebidas">
+    <h2>BEBIDAS REFRESCANTES</h2>
+    <p>Gran variedad de refrescos, aguas y jugos</p>
+    <span class="banner-cta">Ver catálogo</span>
+</div>
+
+<style>
+.banner-ejemplo {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+}
+
+.banner-ejemplo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+    z-index: 1;
+}
+
+.banner-ejemplo h2,
+.banner-ejemplo p,
+.banner-ejemplo .banner-cta {
+    position: relative;
+    z-index: 2;
+}
+
+.banner-ejemplo h2 {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.banner-ejemplo p {
+    font-size: 16px;
+    margin-bottom: 15px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.banner-cta {
+    background: #ff4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
+}
+
+.banner-cta:hover {
+    transform: scale(1.05);
+}
+
+.banner-ofertas {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+}
+
+.banner-frescos {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+
+.banner-despensa {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+}
+
+.banner-bebidas {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+@media (max-width: 768px) {
+    .banner-ejemplo {
+        height: 150px;
+    }
+    
+    .banner-ejemplo h2 {
+        font-size: 22px;
+    }
+    
+    .banner-ejemplo p {
+        font-size: 14px;
+    }
+    
+    .banner-cta {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .banner-ejemplo {
+        height: 120px;
+    }
+    
+    .banner-ejemplo h2 {
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+    
+    .banner-ejemplo p {
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+}
+</style>

@@ -1,0 +1,85 @@
+/* Estilos para banners con imágenes reales - Agrega esto a banner.css */
+
+/* Soporte para imágenes con fallback a gradiente */
+.banner-imagen-fallback {
+    background-image: 
+        url('{{ url_for("static", filename="images/banners/ofertas.jpg") }}'),
+        linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.banner-imagen-lacteos {
+    background-image: 
+        url('{{ url_for("static", filename="images/banners/lacteos.jpg") }}'),
+        linear-gradient(135deg, #4ecdc4, #44a08d);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.banner-imagen-granos {
+    background-image: 
+        url('{{ url_for("static", filename="images/banners/granos.jpg") }}'),
+        linear-gradient(135deg, #f7971e, #ffd200);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.banner-imagen-bebidas {
+    background-image: 
+        url('{{ url_for("static", filename="images/banners/bebidas.jpg") }}'),
+        linear-gradient(135deg, #667eea, #764ba2);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Mejorar la legibilidad del texto sobre imágenes */
+.banner-content-sobre-imagen {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(2px);
+}
+
+.banner-content-sobre-imagen h2 {
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+    color: white;
+}
+
+.banner-content-sobre-imagen p {
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    color: white;
+}
+
+/* Overlay más sutil para imágenes */
+.banner-imagen-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg, 
+        rgba(0,0,0,0.1), 
+        rgba(0,0,0,0.3)
+    );
+    z-index: 1;
+}
+
+/* Contenido con mejor contraste */
+.banner-content-imagen {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: white;
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}

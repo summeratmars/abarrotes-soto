@@ -188,6 +188,192 @@
 
 </style>
 
+<!-- Carrusel de Banners Publicitarios -->
+<div class="banner-container" id="bannerCarousel">
+    <div class="banner-slider">
+        <!-- Banner 1: Ofertas especiales -->
+        <a href="/productos?categoria=ofertas" class="banner-slide">
+            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/ofertas.jpg') }}');">
+                <div class="banner-content">
+                    <h2>¡OFERTAS ESPECIALES!</h2>
+                    <p>Hasta 50% de descuento en productos seleccionados</p>
+                    <span class="banner-cta">Ver ofertas</span>
+                </div>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">¡OFERTAS ESPECIALES!</div>
+                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+            </div>
+        </a>
+        
+        <!-- Banner 2: Productos frescos -->
+        <a href="/productos?departamento=LACTEOS" class="banner-slide">
+            <div class="banner-ejemplo banner-frescos">
+                <h2>PRODUCTOS FRESCOS</h2>
+                <p>La mejor calidad en lácteos y productos frescos</p>
+                <span class="banner-cta">Comprar ahora</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">PRODUCTOS FRESCOS</div>
+                <div class="banner-description">Calidad garantizada en todos nuestros productos frescos</div>
+            </div>
+        </a>
+        
+        <!-- Banner 3: Despensa básica -->
+        <a href="/productos?departamento=GRANOS Y CEREALES" class="banner-slide">
+            <div class="banner-ejemplo banner-despensa">
+                <h2>DESPENSA BÁSICA</h2>
+                <p>Todo lo que necesitas para tu hogar</p>
+                <span class="banner-cta">Explorar</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">DESPENSA BÁSICA</div>
+                <div class="banner-description">Completa tu despensa con nuestros productos esenciales</div>
+            </div>
+        </a>
+        
+        <!-- Banner 4: Bebidas -->
+        <a href="/productos?departamento=BEBIDAS" class="banner-slide">
+            <div class="banner-ejemplo banner-bebidas">
+                <h2>BEBIDAS REFRESCANTES</h2>
+                <p>Gran variedad de refrescos, aguas y jugos</p>
+                <span class="banner-cta">Ver catálogo</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">BEBIDAS REFRESCANTES</div>
+                <div class="banner-description">Para todos los gustos y todas las ocasiones</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Controles de navegación -->
+    <button class="banner-nav banner-prev">‹</button>
+    <button class="banner-nav banner-next">›</button>
+    
+    <!-- Indicadores -->
+    <div class="banner-indicators">
+        <div class="indicator active"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+    </div>
+</div>
+
+<!-- Estilos de banners embebidos -->
+<style>
+.banner-ejemplo {
+    width: 100%;
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 15px;
+}
+
+.banner-ejemplo::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+    z-index: 1;
+}
+
+.banner-ejemplo h2,
+.banner-ejemplo p,
+.banner-ejemplo .banner-cta {
+    position: relative;
+    z-index: 2;
+}
+
+.banner-ejemplo h2 {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+
+.banner-ejemplo p {
+    font-size: 14px;
+    margin-bottom: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+}
+
+.banner-cta {
+    background: #ff4444;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 12px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    transition: transform 0.3s ease;
+}
+
+.banner-cta:hover {
+    transform: scale(1.05);
+}
+
+.banner-ofertas {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+}
+
+.banner-frescos {
+    background: linear-gradient(135deg, #4ecdc4, #44a08d);
+}
+
+.banner-despensa {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+}
+
+.banner-bebidas {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+@media (max-width: 768px) {
+    .banner-ejemplo {
+        height: 150px;
+    }
+    
+    .banner-ejemplo h2 {
+        font-size: 20px;
+    }
+    
+    .banner-ejemplo p {
+        font-size: 12px;
+    }
+    
+    .banner-cta {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 480px) {
+    .banner-ejemplo {
+        height: 120px;
+    }
+    
+    .banner-ejemplo h2 {
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+    
+    .banner-ejemplo p {
+        font-size: 11px;
+        margin-bottom: 8px;
+    }
+}
+</style>
+
 
 
 
@@ -384,6 +570,106 @@
 
   <!-- MODO ESCRITORIO: Lista de productos normal -->
 {% if base_template != 'base_movil.html' %}
+
+<!-- Carrusel de Banners Publicitarios - Versión Escritorio -->
+{% if not departamento and not categoria and not query %}
+<div class="banner-container" id="bannerCarouselDesktop" style="margin-bottom: 25px;">
+    <div class="banner-slider">
+        <!-- Banner 1: Ofertas especiales -->
+        <a href="/?departamento=OFERTAS" class="banner-slide">
+            <div class="banner-ejemplo banner-ofertas">
+                <h2>¡OFERTAS ESPECIALES!</h2>
+                <p>Hasta 50% de descuento en productos seleccionados</p>
+                <span class="banner-cta">Ver ofertas</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">¡OFERTAS ESPECIALES!</div>
+                <div class="banner-description">Encuentra los mejores precios en productos de primera calidad</div>
+            </div>
+        </a>
+        
+        <!-- Banner 2: Productos frescos -->
+        <a href="/?departamento=LACTEOS" class="banner-slide">
+            <div class="banner-ejemplo banner-frescos">
+                <h2>PRODUCTOS FRESCOS</h2>
+                <p>La mejor calidad en lácteos y productos frescos</p>
+                <span class="banner-cta">Comprar ahora</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">PRODUCTOS FRESCOS</div>
+                <div class="banner-description">Calidad garantizada en todos nuestros productos frescos</div>
+            </div>
+        </a>
+        
+        <!-- Banner 3: Despensa básica -->
+        <a href="/?departamento=GRANOS Y CEREALES" class="banner-slide">
+            <div class="banner-ejemplo banner-despensa">
+                <h2>DESPENSA BÁSICA</h2>
+                <p>Todo lo que necesitas para tu hogar</p>
+                <span class="banner-cta">Explorar</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">DESPENSA BÁSICA</div>
+                <div class="banner-description">Completa tu despensa con nuestros productos esenciales</div>
+            </div>
+        </a>
+        
+        <!-- Banner 4: Bebidas -->
+        <a href="/?departamento=BEBIDAS" class="banner-slide">
+            <div class="banner-ejemplo banner-bebidas">
+                <h2>BEBIDAS REFRESCANTES</h2>
+                <p>Gran variedad de refrescos, aguas y jugos</p>
+                <span class="banner-cta">Ver catálogo</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">BEBIDAS REFRESCANTES</div>
+                <div class="banner-description">Para todos los gustos y todas las ocasiones</div>
+            </div>
+        </a>
+        
+        <!-- Banner 5: Dulcería -->
+        <a href="/?departamento=DULCERIA" class="banner-slide">
+            <div class="banner-ejemplo" style="background: linear-gradient(135deg, #ff9a9e, #fecfef);">
+                <h2>DULCERÍA</h2>
+                <p>Los mejores dulces y golosinas</p>
+                <span class="banner-cta">Endulza tu día</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">DULCERÍA</div>
+                <div class="banner-description">Dulces, chocolates y golosinas para toda la familia</div>
+            </div>
+        </a>
+        
+        <!-- Banner 6: Limpieza -->
+        <a href="/?departamento=LIMPIEZA" class="banner-slide">
+            <div class="banner-ejemplo" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                <h2>PRODUCTOS DE LIMPIEZA</h2>
+                <p>Mantén tu hogar impecable</p>
+                <span class="banner-cta">Ver productos</span>
+            </div>
+            <div class="banner-overlay">
+                <div class="banner-title">PRODUCTOS DE LIMPIEZA</div>
+                <div class="banner-description">Todo lo necesario para mantener tu hogar limpio</div>
+            </div>
+        </a>
+    </div>
+    
+    <!-- Controles de navegación -->
+    <button class="banner-nav banner-prev">‹</button>
+    <button class="banner-nav banner-next">›</button>
+    
+    <!-- Indicadores -->
+    <div class="banner-indicators">
+        <div class="indicator active"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+        <div class="indicator"></div>
+    </div>
+</div>
+{% endif %}
+
   <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
     <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
     <div class="botones">

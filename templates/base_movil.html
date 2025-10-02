@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block titulo %}Abarrotes Soto{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/banner.css') }}">
   <style>
     body {
       margin-top: 160px;
@@ -372,6 +373,7 @@ function mostrarToast(mensaje = "✅ Producto agregado al pedido") {
     if (sonido) sonido.play();
 }
 </script>
+<script src="{{ url_for('static', filename='js/banner.js') }}"></script>
 
 </body>
 </html>

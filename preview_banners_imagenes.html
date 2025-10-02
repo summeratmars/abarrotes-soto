@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Banners con Imágenes - Abarrotes Soto</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .title {
+            text-align: center;
+            color: #b30000;
+            margin-bottom: 30px;
+        }
+        
+        .banner-preview {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .banner-slide {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .banner-imagen {
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .banner-imagen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+            z-index: 1;
+        }
+        
+        .banner-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 2;
+            width: 90%;
+        }
+        
+        .banner-content h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        
+        .banner-content p {
+            font-size: 14px;
+            margin-bottom: 12px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .banner-cta {
+            background: #ff4444;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+        
+        .banner-cta:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Imágenes simuladas con gradientes y patrones */
+        .ofertas {
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #ff6b6b, #ff8e8e, #ff4757);
+        }
+        
+        .lacteos {
+            background: 
+                radial-gradient(circle at 30% 70%, rgba(255,255,255,0.2) 0%, transparent 40%),
+                radial-gradient(circle at 70% 30%, rgba(255,255,255,0.1) 0%, transparent 30%),
+                linear-gradient(135deg, #4ecdc4, #44a08d, #2d5a87);
+        }
+        
+        .granos {
+            background: 
+                radial-gradient(circle at 40% 60%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                radial-gradient(circle at 60% 40%, rgba(255,255,255,0.2) 0%, transparent 40%),
+                linear-gradient(135deg, #f7971e, #ffd200, #ffb347);
+        }
+        
+        .bebidas {
+            background: 
+                radial-gradient(circle at 25% 75%, rgba(255,255,255,0.2) 0%, transparent 45%),
+                radial-gradient(circle at 75% 25%, rgba(255,255,255,0.1) 0%, transparent 35%),
+                linear-gradient(135deg, #667eea, #764ba2, #4834d4);
+        }
+        
+        .dulces {
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.3) 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.2) 0%, transparent 40%),
+                linear-gradient(135deg, #ff9a9e, #fecfef, #ff6b9d);
+        }
+        
+        .limpieza {
+            background: 
+                radial-gradient(circle at 60% 40%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(255,255,255,0.1) 0%, transparent 30%),
+                linear-gradient(135deg, #a8edea, #fed6e3, #74b9ff);
+        }
+        
+        .code-example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .instructions {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .banner-slide {
+                height: 150px;
+            }
+            
+            .banner-content h2 {
+                font-size: 20px;
+            }
+            
+            .banner-content p {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">📸 Vista Previa: Banners con Imágenes</h1>
+        
+        <div class="banner-preview">
+            <h2>🎯 Banner de Ofertas</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen ofertas">
+                    <div class="banner-content">
+                        <h2>¡OFERTAS ESPECIALES!</h2>
+                        <p>Hasta 50% de descuento en productos seleccionados</p>
+                        <span class="banner-cta">Ver ofertas</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Para usar una imagen real:</strong><br>
+                1. Sube la imagen <code>ofertas.jpg</code> a <code>/static/images/banners/</code><br>
+                2. Reemplaza la clase <code>ofertas</code> con:
+            </div>
+            
+            <div class="code-example">
+&lt;div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/ofertas.jpg') }}');"&gt;
+    &lt;div class="banner-content"&gt;
+        &lt;h2&gt;¡OFERTAS ESPECIALES!&lt;/h2&gt;
+        &lt;p&gt;Hasta 50% de descuento en productos seleccionados&lt;/p&gt;
+        &lt;span class="banner-cta"&gt;Ver ofertas&lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+            </div>
+        </div>
+        
+        <div class="banner-preview">
+            <h2>🥛 Banner de Productos Frescos</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen lacteos">
+                    <div class="banner-content">
+                        <h2>PRODUCTOS FRESCOS</h2>
+                        <p>La mejor calidad en lácteos y productos frescos</p>
+                        <span class="banner-cta">Comprar ahora</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Imagen sugerida:</strong> <code>lacteos.jpg</code> - Foto de productos lácteos, quesos, leche, yogures
+            </div>
+        </div>
+        
+        <div class="banner-preview">
+            <h2>🌾 Banner de Despensa</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen granos">
+                    <div class="banner-content">
+                        <h2>DESPENSA BÁSICA</h2>
+                        <p>Todo lo que necesitas para tu hogar</p>
+                        <span class="banner-cta">Explorar</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Imagen sugerida:</strong> <code>granos.jpg</code> - Foto de granos, cereales, arroz, frijoles
+            </div>
+        </div>
+        
+        <div class="banner-preview">
+            <h2>🥤 Banner de Bebidas</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen bebidas">
+                    <div class="banner-content">
+                        <h2>BEBIDAS REFRESCANTES</h2>
+                        <p>Gran variedad de refrescos, aguas y jugos</p>
+                        <span class="banner-cta">Ver catálogo</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Imagen sugerida:</strong> <code>bebidas.jpg</code> - Foto de refrescos, aguas, jugos
+            </div>
+        </div>
+        
+        <div class="banner-preview">
+            <h2>🍬 Banner de Dulcería</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen dulces">
+                    <div class="banner-content">
+                        <h2>DULCERÍA</h2>
+                        <p>Los mejores dulces y golosinas</p>
+                        <span class="banner-cta">Endulza tu día</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Imagen sugerida:</strong> <code>dulces.jpg</code> - Foto de dulces, chocolates, caramelos
+            </div>
+        </div>
+        
+        <div class="banner-preview">
+            <h2>🧼 Banner de Limpieza</h2>
+            <a href="#" class="banner-slide">
+                <div class="banner-imagen limpieza">
+                    <div class="banner-content">
+                        <h2>PRODUCTOS DE LIMPIEZA</h2>
+                        <p>Mantén tu hogar impecable</p>
+                        <span class="banner-cta">Ver productos</span>
+                    </div>
+                </div>
+            </a>
+            
+            <div class="instructions">
+                <strong>Imagen sugerida:</strong> <code>limpieza.jpg</code> - Foto de productos de limpieza
+            </div>
+        </div>
+        
+        <div class="warning">
+            <h3>📋 Checklist para Implementar Imágenes:</h3>
+            <ul>
+                <li>✅ Preparar imágenes en formato JPG/PNG (1200x200px para escritorio)</li>
+                <li>✅ Subir a <code>/static/images/banners/</code></li>
+                <li>✅ Modificar el HTML en <code>templates/index.html</code></li>
+                <li>✅ Probar que las imágenes se cargan correctamente</li>
+                <li>✅ Verificar legibilidad del texto sobre las imágenes</li>
+                <li>✅ Optimizar el tamaño de las imágenes para web</li>
+            </ul>
+        </div>
+        
+        <div class="instructions">
+            <h3>🔧 Pasos Rápidos:</h3>
+            <ol>
+                <li><strong>Crea/Descarga</strong> las imágenes que quieres usar</li>
+                <li><strong>Colócalas</strong> en <code>static/images/banners/</code></li>
+                <li><strong>Reemplaza</strong> las clases <code>banner-ejemplo</code> por <code>banner-imagen</code></li>
+                <li><strong>Agrega</strong> el atributo <code>style="background-image: url(...)"</code></li>
+                <li><strong>Envuelve</strong> el contenido en <code>&lt;div class="banner-content"&gt;</code></li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
