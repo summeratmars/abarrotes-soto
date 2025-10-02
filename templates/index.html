@@ -358,10 +358,6 @@
     </div>
 </div>
 
-{% endif %}
-
-{% if base_template == 'base_movil.html' and not departamento and not categoria and not query %}
-
 {% for dep, prods in productos_por_departamento.items() %}
   {% set icono = {
     'BEBES': '👶',
@@ -780,6 +776,5 @@ function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntos) {
 
 </script>
 
-{% endif %}
 
 {% endblock %}
