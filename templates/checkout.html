@@ -1,70 +1,605 @@
 {% extends base_template %}
 {% block contenido %}
-<div style="display:flex;justify-content:center;align-items:center;min-height:70vh;">
-  <form method="POST" action="/checkout" id="checkout-form" style="background:#fff;max-width:480px;width:100%;padding:32px 32px 24px 32px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.10);">
-    <div style="font-size:1.2rem;font-weight:bold;margin-bottom:18px;text-align:center;">Finalizar Pedido</div>
-    <div style="margin-bottom:16px;">
-      <label for="nombre" style="font-weight:600;">Nombre:</label>
-      <input type="text" name="nombre" id="nombre" required style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-    </div>
-    <div style="margin-bottom:16px;">
-      <label for="direccion" style="font-weight:600;">Dirección:</label>
-      <input type="text" name="direccion" id="direccion" required style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-    </div>
-    <div style="margin-bottom:16px;">
-      <label for="colonia" style="font-weight:600;">Colonia:</label>
-      <select name="colonia" id="colonia" required style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-        <option value="">Selecciona tu colonia</option>
-        <optgroup label="Envío desde $50">
-          <option value="VILLAS CHALCO">VILLAS CHALCO</option>
-          <option value="PORTAL CHALCO">PORTAL CHALCO</option>
-          <option value="VOLCANES">VOLCANES</option>
-          <option value="VOLCANES 2">VOLCANES 2</option>
-          <option value="TERRA">TERRA</option>
-          <option value="MARCO ANTONIO SOSA">MARCO ANTONIO SOSA</option>
-        </optgroup>
-        <optgroup label="Envío desde $100">
-          <option value="LA CONCHITA">LA CONCHITA</option>
-          <option value="BARRIO SAN ANTONIO">BARRIO SAN ANTONIO</option>
-          <option value="LA ZAPATA">LA ZAPATA</option>
-          <option value="PASEOS CHALCO">PASEOS CHALCO</option>
-          <option value="MARGARITA MORAN">MARGARITA MORAN</option>
-          <option value="SAN MARTIN XICO NUEVO">SAN MARTIN XICO NUEVO</option>
-          <option value="SAN LORENZO CHIMALPA">SAN LORENZO CHIMALPA</option>
-          <option value="SAN MATEO HUITZILZINGO">SAN MATEO HUITZILZINGO</option>
-          <option value="SAN PABLO">SAN PABLO</option>
-        </optgroup>
-        <option value="OTRO">No está mi colonia</option>
-      </select>
-    </div>
-    <div style="margin-bottom:16px;">
-      <label for="telefono" style="font-weight:600;">Teléfono:</label>
-      <input type="text" name="telefono" id="telefono" required style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-    </div>
-    <div style="margin-bottom:16px;">
-      <label for="numero_cliente" style="font-weight:600;">Número de cliente (opcional):</label>
-      <input type="text" name="numero_cliente" id="numero_cliente" placeholder="Ej. 5020003" style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-    </div>
-    <div style="margin-bottom:16px;">
-      <label for="pago" style="font-weight:600;">Forma de pago:</label>
-      <select name="pago" id="pago" required style="width:100%;padding:10px 12px;margin-top:4px;border:1px solid #ccc;border-radius:6px;font-size:1rem;">
-        <option value="">Selecciona una opción</option>
-        <option value="Efectivo">Efectivo</option>
-        <option value="Transferencia">Transferencia</option>
-        <option value="Tarjeta">Tarjeta (CONTRA ENTREGA)</option>
-      </select>
-    </div>
-    <input type="hidden" name="carrito_json" id="carrito_json">
-    <button type="submit" style="width:100%;background:#43a047;color:#fff;font-weight:bold;padding:14px 0;border:none;border-radius:8px;font-size:1.1rem;box-shadow:0 2px 8px rgba(67,160,71,0.08);margin-top:10px;transition:background 0.2s;">✅ Enviar Pedido</button>
-  </form>
-</div>
-<script>
-// Guardar el carrito en el campo oculto antes de enviar
-const form = document.getElementById('checkout-form');
-if(form) {
-  form.addEventListener('submit', function(e) {
-    document.getElementById('carrito_json').value = localStorage.getItem('carrito') || '[]';
-  });
+<style>
+.checkout-container {
+    min-height: 70vh;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
+
+.checkout-form {
+    max-width: 600px;
+    width: 100%;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin: 0 auto;
+}
+
+.form-header {
+    background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+.form-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.form-header p {
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+    font-size: 0.95rem;
+}
+
+.form-content {
+    padding: 30px;
+}
+
+.form-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    border: 2px solid #f0f0f0;
+    border-radius: 12px;
+    transition: border-color 0.3s ease;
+}
+
+.form-section:hover {
+    border-color: #e0e0e0;
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2e7d32;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 0.95rem;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.payment-options {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.payment-option {
+    padding: 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.payment-option:hover {
+    border-color: #2e7d32;
+    background-color: #f8fdf8;
+}
+
+.payment-option.selected {
+    border-color: #2e7d32;
+    background-color: #e8f5e8;
+}
+
+.payment-icon {
+    font-size: 1.5rem;
+    width: 30px;
+    text-align: center;
+}
+
+.payment-details {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #2e7d32;
+    display: none;
+}
+
+.payment-details.active {
+    display: block;
+}
+
+.payment-info {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.horario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.horario-option {
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.horario-option:hover {
+    border-color: #2e7d32;
+    background-color: #f8fdf8;
+}
+
+.horario-option.selected {
+    border-color: #2e7d32;
+    background-color: #e8f5e8;
+    font-weight: 600;
+}
+
+.submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    color: white;
+    font-weight: 600;
+    padding: 16px 0;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+}
+
+.cambio-section {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #fff3cd;
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+    display: none;
+}
+
+.cambio-section.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .checkout-container {
+        padding: 10px;
+    }
+    
+    .form-content {
+        padding: 20px;
+    }
+    
+    .form-section {
+        padding: 15px;
+    }
+    
+    .horario-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<div class="checkout-container">
+    <form method="POST" action="/checkout" id="checkout-form" class="checkout-form">
+        <div class="form-header">
+            <h1>🛒 Finalizar Pedido</h1>
+            <p>Completa los datos para procesar tu pedido</p>
+        </div>
+        
+        <div class="form-content">
+            <!-- Información Personal -->
+            <div class="form-section">
+                <div class="section-title">
+                    👤 Información Personal
+                </div>
+                
+                <div class="form-group">
+                    <label for="nombre" class="form-label">Nombre completo:</label>
+                    <input type="text" name="nombre" id="nombre" required class="form-input" placeholder="Ej. Juan Pérez García">
+                </div>
+                
+                <div class="form-group">
+                    <label for="telefono" class="form-label">Teléfono:</label>
+                    <input type="tel" name="telefono" id="telefono" required class="form-input" placeholder="Ej. 5512345678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="numero_cliente" class="form-label">Número de cliente (opcional):</label>
+                    <input type="text" name="numero_cliente" id="numero_cliente" class="form-input" placeholder="Ej. CLI00123">
+                </div>
+            </div>
+
+            <!-- Información de Entrega -->
+            <div class="form-section">
+                <div class="section-title">
+                    📍 Información de Entrega
+                </div>
+                
+                <div class="form-group">
+                    <label for="direccion" class="form-label">Dirección completa:</label>
+                    <input type="text" name="direccion" id="direccion" required class="form-input" placeholder="Calle, número, referencias">
+                </div>
+                
+                <div class="form-group">
+                    <label for="colonia" class="form-label">Colonia:</label>
+                    <select name="colonia" id="colonia" required class="form-select">
+                        <option value="">Selecciona tu colonia</option>
+                        <optgroup label="🚚 Envío desde $50">
+                            <option value="VILLAS CHALCO">VILLAS CHALCO</option>
+                            <option value="PORTAL CHALCO">PORTAL CHALCO</option>
+                            <option value="VOLCANES">VOLCANES</option>
+                            <option value="VOLCANES 2">VOLCANES 2</option>
+                            <option value="TERRA">TERRA</option>
+                            <option value="MARCO ANTONIO SOSA">MARCO ANTONIO SOSA</option>
+                        </optgroup>
+                        <optgroup label="🚛 Envío desde $100">
+                            <option value="LA CONCHITA">LA CONCHITA</option>
+                            <option value="BARRIO SAN ANTONIO">BARRIO SAN ANTONIO</option>
+                            <option value="LA ZAPATA">LA ZAPATA</option>
+                            <option value="PASEOS CHALCO">PASEOS CHALCO</option>
+                            <option value="MARGARITA MORAN">MARGARITA MORAN</option>
+                            <option value="SAN MARTIN XICO NUEVO">SAN MARTIN XICO NUEVO</option>
+                            <option value="SAN LORENZO CHIMALPA">SAN LORENZO CHIMALPA</option>
+                            <option value="SAN MATEO HUITZILZINGO">SAN MATEO HUITZILZINGO</option>
+                            <option value="SAN PABLO">SAN PABLO</option>
+                        </optgroup>
+                        <option value="OTRO">❓ No está mi colonia</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Horario de Entrega -->
+            <div class="form-section">
+                <div class="section-title">
+                    ⏰ Horario de Entrega
+                </div>
+                
+                <input type="hidden" name="horario_entrega" id="horario_entrega">
+                <div class="horario-grid" id="horario-container">
+                    <!-- Los horarios se generarán dinámicamente con JavaScript -->
+                </div>
+            </div>
+
+            <!-- Método de Pago -->
+            <div class="form-section">
+                <div class="section-title">
+                    💳 Método de Pago
+                </div>
+                
+                <input type="hidden" name="pago" id="pago_hidden">
+                <input type="hidden" name="pago_efectivo_cambio" id="pago_efectivo_cambio">
+                <input type="hidden" name="pago_efectivo_monto" id="pago_efectivo_monto">
+                
+                <div class="payment-options">
+                    <div class="payment-option" data-payment="Efectivo">
+                        <div class="payment-icon">💵</div>
+                        <div>
+                            <strong>Efectivo</strong><br>
+                            <small style="color: #666;">Pago contra entrega</small>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-option" data-payment="Transferencia">
+                        <div class="payment-icon">🏦</div>
+                        <div>
+                            <strong>Transferencia Bancaria</strong><br>
+                            <small style="color: #666;">SPEI o transferencia</small>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-option" data-payment="Tarjeta">
+                        <div class="payment-icon">💳</div>
+                        <div>
+                            <strong>Tarjeta de Débito/Crédito</strong><br>
+                            <small style="color: #666;">Contra entrega</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalles de Efectivo -->
+                <div class="payment-details" id="efectivo-details">
+                    <div class="payment-info">
+                        <strong>🏪 Pago en Efectivo</strong><br>
+                        Nuestro repartidor cobrará el pedido al momento de la entrega.
+                        
+                        <div style="margin-top: 15px;">
+                            <label style="display: block; margin-bottom: 10px;">
+                                <input type="radio" name="efectivo_tipo" value="justo" style="margin-right: 8px;">
+                                💯 Pago justo (sin cambio)
+                            </label>
+                            
+                            <label style="display: block;">
+                                <input type="radio" name="efectivo_tipo" value="cambio" style="margin-right: 8px;">
+                                💰 Necesito cambio
+                            </label>
+                            
+                            <div class="cambio-section" id="cambio-section">
+                                <label for="monto_pago" style="display: block; margin-bottom: 5px; font-weight: 600;">
+                                    ¿Con cuánto vas a pagar?
+                                </label>
+                                <input type="number" id="monto_pago" class="form-input" placeholder="Ej. 500" min="1" step="1">
+                                <small style="color: #666; display: block; margin-top: 5px;">
+                                    Total del pedido: $<span id="total-pedido">0.00</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalles de Transferencia -->
+                <div class="payment-details" id="transferencia-details">
+                    <div class="payment-info">
+                        <strong>🏦 Datos para Transferencia</strong><br><br>
+                        
+                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>Banco:</strong> BBVA Bancomer<br>
+                                <strong>Titular:</strong> Abarrotes Soto S.A. de C.V.<br>
+                                <strong>CLABE:</strong> <span style="font-family: monospace; font-size: 1.1em; color: #2e7d32; font-weight: bold;">012180001234567890</span><br>
+                                <strong>Cuenta:</strong> 0123456789
+                            </div>
+                            
+                            <div style="padding: 10px; background: #e3f2fd; border-radius: 6px; margin-top: 10px;">
+                                <small>
+                                    📱 <strong>Importante:</strong> Envía tu comprobante de pago por WhatsApp al 
+                                    <strong style="color: #2e7d32;">55 7525 1742</strong> para confirmar tu pedido.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detalles de Tarjeta -->
+                <div class="payment-details" id="tarjeta-details">
+                    <div class="payment-info">
+                        <strong>💳 Pago con Tarjeta</strong><br><br>
+                        
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px;">
+                            ✅ <strong>Nuestro repartidor llevará la terminal bancaria</strong><br><br>
+                            
+                            <div style="margin-top: 10px;">
+                                • Aceptamos tarjetas de débito y crédito<br>
+                                • Visa, MasterCard, American Express<br>
+                                • Pago seguro con chip y NIP<br>
+                                • Sin comisiones adicionales
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" name="carrito_json" id="carrito_json">
+            <button type="submit" class="submit-btn">
+                ✅ Confirmar Pedido
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Generar horarios dinámicos basados en la hora actual de México City
+    function generarHorariosDisponibles() {
+        const container = document.getElementById('horario-container');
+        
+        // Obtener hora actual de México City
+        const now = new Date();
+        const mexicoTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Mexico_City"}));
+        const horaActual = mexicoTime.getHours();
+        const minutoActual = mexicoTime.getMinutes();
+        
+        // Limpiar container
+        container.innerHTML = '';
+        
+        // Agregar opción "Lo antes posible" si está en horario de servicio
+        if (horaActual >= 8 && horaActual < 22) {
+            const tiempoEstimado = "10-40 min";
+            
+            const optionPronto = document.createElement('div');
+            optionPronto.className = 'horario-option';
+            optionPronto.setAttribute('data-horario', 'Lo antes posible');
+            optionPronto.innerHTML = `
+                🚀 Lo antes posible<br>
+                <small style="color: #666;">${tiempoEstimado}</small>
+            `;
+            container.appendChild(optionPronto);
+        }
+        
+        // Generar horarios de 8 AM a 10 PM
+        for (let hora = 8; hora < 22; hora++) {
+            const horaInicio = hora;
+            const horaFin = hora + 1;
+            
+            // Solo mostrar horarios futuros (con 15 minutos de margen)
+            if (horaInicio > horaActual || (horaInicio === horaActual && minutoActual < 45)) {
+                const formatoInicio = formatearHora(horaInicio);
+                const formatoFin = formatearHora(horaFin);
+                
+                const option = document.createElement('div');
+                option.className = 'horario-option';
+                option.setAttribute('data-horario', `${formatoInicio} - ${formatoFin}`);
+                
+                // Agregar iconos según la hora
+                let icono = '🕐';
+                if (horaInicio >= 6 && horaInicio < 12) icono = '🌅';
+                else if (horaInicio >= 12 && horaInicio < 15) icono = '☀️';
+                else if (horaInicio >= 15 && horaInicio < 18) icono = '🌤️';
+                else if (horaInicio >= 18) icono = '🌆';
+                
+                option.innerHTML = `
+                    ${icono} ${formatoInicio} - ${formatoFin}<br>
+                    <small style="color: #666;">Entrega programada</small>
+                `;
+                container.appendChild(option);
+            }
+        }
+        
+        // Si no hay horarios disponibles hoy, mostrar mensaje
+        if (container.children.length === 0) {
+            const noDisponible = document.createElement('div');
+            noDisponible.className = 'horario-option';
+            noDisponible.style.opacity = '0.6';
+            noDisponible.innerHTML = `
+                😴 Fuera de horario<br>
+                <small style="color: #666;">Servicio de 8:00 AM a 10:00 PM</small>
+            `;
+            container.appendChild(noDisponible);
+        }
+    }
+    
+    // Función para formatear hora en formato 12 horas
+    function formatearHora(hora24) {
+        if (hora24 === 0) return '12:00 AM';
+        if (hora24 === 12) return '12:00 PM';
+        if (hora24 < 12) return `${hora24}:00 AM`;
+        if (hora24 === 24) return '12:00 AM';
+        return `${hora24 - 12}:00 PM`;
+    }
+    
+    // Generar horarios al cargar la página
+    generarHorariosDisponibles();
+
+    // Calcular y mostrar total del pedido
+    const carrito = JSON.parse(localStorage.getItem('carrito') || '[]');
+    const total = carrito.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    document.getElementById('total-pedido').textContent = total.toFixed(2);
+
+    // Manejar selección de horario (usando delegación de eventos)
+    document.getElementById('horario-container').addEventListener('click', function(e) {
+        const option = e.target.closest('.horario-option');
+        if (option && option.dataset.horario) {
+            // Remover selección anterior
+            document.querySelectorAll('.horario-option').forEach(opt => opt.classList.remove('selected'));
+            // Agregar selección actual
+            option.classList.add('selected');
+            document.getElementById('horario_entrega').value = option.dataset.horario;
+        }
+    });
+
+    // Manejar selección de método de pago
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    const paymentDetails = document.querySelectorAll('.payment-details');
+    
+    paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            paymentOptions.forEach(opt => opt.classList.remove('selected'));
+            paymentDetails.forEach(detail => detail.classList.remove('active'));
+            
+            this.classList.add('selected');
+            document.getElementById('pago_hidden').value = this.dataset.payment;
+            
+            const detailId = this.dataset.payment.toLowerCase() + '-details';
+            const detailElement = document.getElementById(detailId);
+            if (detailElement) {
+                detailElement.classList.add('active');
+            }
+        });
+    });
+
+    // Manejar opciones de efectivo
+    const efectivoRadios = document.querySelectorAll('input[name="efectivo_tipo"]');
+    const cambioSection = document.getElementById('cambio-section');
+    
+    efectivoRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'cambio') {
+                cambioSection.classList.add('active');
+                document.getElementById('pago_efectivo_cambio').value = 'si';
+            } else {
+                cambioSection.classList.remove('active');
+                document.getElementById('pago_efectivo_cambio').value = 'no';
+            }
+        });
+    });
+
+    // Manejar monto de pago
+    document.getElementById('monto_pago').addEventListener('input', function() {
+        document.getElementById('pago_efectivo_monto').value = this.value;
+    });
+
+    // Validación del formulario
+    const form = document.getElementById('checkout-form');
+    form.addEventListener('submit', function(e) {
+        // Validar que se haya seleccionado horario
+        if (!document.getElementById('horario_entrega').value) {
+            e.preventDefault();
+            alert('Por favor selecciona un horario de entrega');
+            return;
+        }
+
+        // Validar que se haya seleccionado método de pago
+        if (!document.getElementById('pago_hidden').value) {
+            e.preventDefault();
+            alert('Por favor selecciona un método de pago');
+            return;
+        }
+
+        // Validar efectivo con cambio
+        const metodoPago = document.getElementById('pago_hidden').value;
+        if (metodoPago === 'Efectivo') {
+            const tipoEfectivo = document.querySelector('input[name="efectivo_tipo"]:checked');
+            if (!tipoEfectivo) {
+                e.preventDefault();
+                alert('Por favor especifica si necesitas cambio o pagas justo');
+                return;
+            }
+            
+            if (tipoEfectivo.value === 'cambio') {
+                const montoPago = document.getElementById('monto_pago').value;
+                if (!montoPago || parseFloat(montoPago) <= total) {
+                    e.preventDefault();
+                    alert('El monto con el que vas a pagar debe ser mayor al total del pedido');
+                    return;
+                }
+            }
+        }
+
+        // Guardar carrito en campo oculto
+        document.getElementById('carrito_json').value = localStorage.getItem('carrito') || '[]';
+    });
+});
 </script>
 {% endblock %}

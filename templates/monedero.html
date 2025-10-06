@@ -1,78 +1,561 @@
 {% extends base_template %}
 {% block titulo %}Registro Monedero{% endblock %}
 {% block contenido %}
-<div style="max-width: 500px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-    <h1 style="color: #b30000; text-align: center;">💳 Registro al Monedero</h1>
-
-    {% if mensaje %}
-        <p style="color: green; text-align: center; font-weight: bold;">{{ mensaje }}</p>
-    {% endif %}
-
-    <form method="post">
-        <label for="nombre" style="font-weight: bold;">Nombre completo:</label>
-        <input type="text" id="nombre" name="nombre" required style="width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px;">
-
-        <label for="telefono" style="font-weight: bold;">Teléfono:</label>
-        <input type="tel" id="telefono" name="telefono" required style="width: 100%; padding: 10px; margin-top: 6px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 6px;">
-
-        <button type="submit" style="width: 100%; padding: 12px; background-color: #4CAF50; color: white; font-weight: bold; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">✅ Registrar</button>
-    </form>
-</div>
-
-<!-- 🔔 Toast con barra de progreso -->
-<div id="toast" style="
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #28a745;
-    color: white;
-    padding: 14px 20px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    z-index: 9999;
-    transition: opacity 0.5s ease;
-    min-width: 280px;
-    text-align: center;
-">
-    🎉 Cliente registrado correctamente
-    <div id="toast-bar" style="
-        margin-top: 10px;
-        height: 4px;
-        background: rgba(255,255,255,0.6);
-        border-radius: 4px;
-        overflow: hidden;
-    ">
-        <div style="
-            width: 100%;
-            height: 100%;
-            background: white;
-            animation: shrink 5s linear forwards;
-        "></div>
-    </div>
-</div>
-
 <style>
-@keyframes shrink {
+  .registro-container {
+    max-width: 550px;
+    margin: auto;
+    padding: 40px 20px;
+  }
+  
+  .registro-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .registro-header h1 {
+    color: #b30000;
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-shadow: 0 2px 4px rgba(179, 0, 0, 0.1);
+  }
+  
+  .registro-header .subtitle {
+    color: #666;
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+  
+  .beneficios-list {
+    background: linear-gradient(145deg, #e3f2fd 0%, #e8f5e9 100%);
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #4caf50;
+    margin-bottom: 30px;
+  }
+  
+  .beneficios-list h3 {
+    color: #1976d2;
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 600;
+  }
+  
+  .beneficio-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 1.1em;
+    color: #333;
+  }
+  
+  .beneficio-item .icon {
+    font-size: 1.5em;
+    margin-right: 12px;
+    width: 30px;
+  }
+  
+  .registro-form {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 40px 35px;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(179, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .registro-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, #b30000 0%, #4caf50 50%, #ff9800 100%);
+  }
+  
+  .form-group {
+    margin-bottom: 30px;
+    position: relative;
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+    transition: color 0.3s ease;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 18px 25px;
+    border: 2px solid #e0e0e0;
+    border-radius: 15px;
+    font-size: 1.2em;
+    transition: all 0.3s ease;
+    background: #fff;
+    box-sizing: border-box;
+    position: relative;
+  }
+  
+  .form-input:focus {
+    outline: none;
+    border-color: #b30000;
+    box-shadow: 0 0 0 4px rgba(179, 0, 0, 0.1);
+    transform: translateY(-3px);
+  }
+  
+  .form-input.valid {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.05);
+  }
+  
+  .form-input.invalid {
+    border-color: #f44336;
+    background: rgba(244, 67, 54, 0.05);
+  }
+  
+  .input-feedback {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5em;
+    transition: all 0.3s ease;
+  }
+  
+  .validation-message {
+    font-size: 0.9em;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  .validation-message.success {
+    color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+  }
+  
+  .validation-message.error {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.1);
+  }
+  
+  .btn-registrar {
+    width: 100%;
+    background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+    color: white;
+    font-weight: 700;
+    padding: 20px 0;
+    border: none;
+    border-radius: 15px;
+    font-size: 1.3em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 20px;
+  }
+  
+  .btn-registrar:hover {
+    background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+  }
+  
+  .btn-registrar:active {
+    transform: translateY(0);
+  }
+  
+  .btn-registrar:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .loading-spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+  }
+  
+  .success-message {
+    background: linear-gradient(145deg, #e8f5e9 0%, #f1f8e9 100%);
+    color: #2e7d32;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.2em;
+    border: 2px solid #4caf50;
+    margin-top: 25px;
+    animation: slideInUp 0.6s ease;
+  }
+  
+  .success-icon {
+    font-size: 3em;
+    margin-bottom: 15px;
+    display: block;
+  }
+  
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+    color: white;
+    padding: 20px 25px;
+    border-radius: 15px;
+    font-weight: 600;
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    z-index: 9999;
+    transform: translateX(400px);
+    transition: all 0.5s ease;
+    max-width: 350px;
+  }
+  
+  .toast.show {
+    transform: translateX(0);
+  }
+  
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 0 0 15px 15px;
+    animation: progressBar 4s linear forwards;
+  }
+  
+  .info-section {
+    background: linear-gradient(145deg, #fff3e0 0%, #fce4ec 100%);
+    padding: 25px;
+    border-radius: 20px;
+    margin-top: 30px;
+    border: 2px solid #ff9800;
+    text-align: center;
+  }
+  
+  .info-section h3 {
+    color: #e65100;
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    font-weight: 600;
+  }
+  
+  .info-section p {
+    color: #bf360c;
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin: 0;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes progressBar {
     from { width: 100%; }
     to { width: 0%; }
-}
+  }
+  
+  @media (max-width: 768px) {
+    .registro-container {
+      padding: 20px 15px;
+    }
+    
+    .registro-form {
+      padding: 30px 25px;
+    }
+    
+    .registro-header h1 {
+      font-size: 2em;
+    }
+    
+    .form-input {
+      padding: 15px 20px;
+      font-size: 1.1em;
+    }
+    
+    .btn-registrar {
+      padding: 18px 0;
+      font-size: 1.2em;
+    }
+    
+    .toast {
+      bottom: 20px;
+      right: 20px;
+      left: 20px;
+      max-width: none;
+    }
+  }
 </style>
 
+<div class="registro-container">
+  <div class="registro-header">
+    <h1><span class="icon">💳</span>Registro al Monedero</h1>
+    <p class="subtitle">Únete a nuestro programa de lealtad y obtén beneficios exclusivos</p>
+  </div>
+  
+  <div class="beneficios-list">
+    <h3><span class="icon">🎁</span>Beneficios del Monedero</h3>
+    <div class="beneficio-item">
+      <span class="icon">⭐</span>
+      <span>Acumula puntos con cada compra</span>
+    </div>
+    <div class="beneficio-item">
+      <span class="icon">💰</span>
+      <span>Canjea puntos por productos y descuentos
+      </span>
+    </div>
+    <div class="beneficio-item">
+      <span class="icon">🎉</span>
+      <span>Ofertas y promociones exclusivas</span>
+    </div>
+    <div class="beneficio-item">
+      <span class="icon">🎂</span>
+      <span>Descuentos especiales en tu cumpleaños</span>
+    </div>
+  </div>
+
+  {% if mensaje %}
+    <div class="success-message">
+      <span class="success-icon">🎉</span>
+      {{ mensaje }}
+    </div>
+  {% endif %}
+
+  <form method="post" class="registro-form" id="registroForm">
+    <div class="form-group">
+      <label for="nombre" class="form-label">
+        <span class="icon">👤</span>Nombre completo:
+      </label>
+      <div style="position: relative;">
+        <input 
+          type="text" 
+          id="nombre" 
+          name="nombre" 
+          required 
+          class="form-input"
+          placeholder="Ej. Juan Pérez González"
+          autocomplete="name"
+          minlength="3"
+          maxlength="100"
+        >
+        <span class="input-feedback" id="nombreFeedback"></span>
+      </div>
+      <div class="validation-message" id="nombreMessage"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="telefono" class="form-label">
+        <span class="icon">📱</span>Teléfono:
+      </label>
+      <div style="position: relative;">
+        <input 
+          type="tel" 
+          id="telefono" 
+          name="telefono" 
+          required 
+          class="form-input"
+          placeholder="Ej. 5512345678"
+          autocomplete="tel"
+          pattern="[0-9]{10}"
+          maxlength="10"
+        >
+        <span class="input-feedback" id="telefonoFeedback"></span>
+      </div>
+      <div class="validation-message" id="telefonoMessage"></div>
+    </div>
+
+    <button type="submit" class="btn-registrar" id="submitBtn" disabled>
+      <span class="loading-spinner" id="loadingSpinner"></span>
+      <span class="icon">✅</span>
+      <span id="btnText">Registrar en el Monedero</span>
+    </button>
+  </form>
+  
+  <div class="info-section">
+    <h3><span class="icon">ℹ️</span>Información Importante</h3>
+    <p>Tu información está protegida y solo se utiliza para ofrecerte un mejor servicio. Los puntos no tienen fecha de vencimiento.</p>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+{% if mensaje %}
+<div class="toast" id="toast">
+  <span class="icon">🎉</span>
+  {{ mensaje }}
+  <div class="toast-progress"></div>
+</div>
+{% endif %}
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registroForm');
+    const nombreInput = document.getElementById('nombre');
+    const telefonoInput = document.getElementById('telefono');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const btnText = document.getElementById('btnText');
+    
+    // Animación de entrada
+    const formElement = document.querySelector('.registro-form');
+    formElement.style.opacity = '0';
+    formElement.style.transform = 'translateY(30px)';
+    
+    setTimeout(() => {
+        formElement.style.transition = 'all 0.8s ease';
+        formElement.style.opacity = '1';
+        formElement.style.transform = 'translateY(0)';
+    }, 200);
+    
+    // Auto-focus en el primer input
+    nombreInput.focus();
+    
+    // Validación en tiempo real
+    function validateInput(input, type) {
+        const value = input.value.trim();
+        const feedback = document.getElementById(type + 'Feedback');
+        const message = document.getElementById(type + 'Message');
+        
+        let isValid = false;
+        let messageText = '';
+        
+        if (type === 'nombre') {
+            if (value.length === 0) {
+                messageText = '';
+            } else if (value.length < 3) {
+                messageText = 'El nombre debe tener al menos 3 caracteres';
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                feedback.textContent = '❌';
+            } else if (!/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/.test(value)) {
+                messageText = 'Solo se permiten letras y espacios';
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                feedback.textContent = '❌';
+            } else {
+                messageText = 'Nombre válido';
+                input.classList.add('valid');
+                input.classList.remove('invalid');
+                feedback.textContent = '✅';
+                isValid = true;
+            }
+        } else if (type === 'telefono') {
+            if (value.length === 0) {
+                messageText = '';
+            } else if (!/^\d+$/.test(value)) {
+                messageText = 'Solo se permiten números';
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                feedback.textContent = '❌';
+            } else if (value.length < 10) {
+                messageText = `Faltan ${10 - value.length} dígitos`;
+                input.classList.add('invalid');
+                input.classList.remove('valid');
+                feedback.textContent = '❌';
+            } else if (value.length === 10) {
+                messageText = 'Teléfono válido';
+                input.classList.add('valid');
+                input.classList.remove('invalid');
+                feedback.textContent = '✅';
+                isValid = true;
+            }
+        }
+        
+        if (messageText) {
+            message.textContent = messageText;
+            message.classList.toggle('success', isValid);
+            message.classList.toggle('error', !isValid);
+            message.style.opacity = '1';
+        } else {
+            message.style.opacity = '0';
+            input.classList.remove('valid', 'invalid');
+            feedback.textContent = '';
+        }
+        
+        return isValid;
+    }
+    
+    function checkFormValidity() {
+        const nombreValid = validateInput(nombreInput, 'nombre');
+        const telefonoValid = validateInput(telefonoInput, 'telefono');
+        
+        submitBtn.disabled = !(nombreValid && telefonoValid);
+        
+        if (!submitBtn.disabled) {
+            submitBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+        } else {
+            submitBtn.style.background = '#ccc';
+        }
+    }
+    
+    // Event listeners
+    nombreInput.addEventListener('input', function() {
+        // Solo permitir letras, espacios y acentos
+        this.value = this.value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+        checkFormValidity();
+    });
+    
+    telefonoInput.addEventListener('input', function() {
+        // Solo permitir números y limitar a 10 dígitos
+        this.value = this.value.replace(/\D/g, '').substring(0, 10);
+        checkFormValidity();
+    });
+    
+    // Animación del botón al enviar
+    form.addEventListener('submit', function(e) {
+        if (!submitBtn.disabled) {
+            loadingSpinner.style.display = 'inline-block';
+            btnText.textContent = 'Registrando...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Mostrar toast si hay mensaje
     {% if mensaje %}
-    const toast = document.getElementById("toast");
-    toast.style.display = "block";
-    toast.style.opacity = "1";
     setTimeout(() => {
-        toast.style.opacity = "0";
-    }, 5000);
-    setTimeout(() => {
-        toast.style.display = "none";
-        toast.style.opacity = "1";
-    }, 6000);
+        const toast = document.getElementById('toast');
+        if (toast) {
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+    }, 500);
     {% endif %}
+    
+    // Inicializar validación
+    checkFormValidity();
+});
 </script>
 {% endblock %}

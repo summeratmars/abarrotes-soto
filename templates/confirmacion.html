@@ -20,27 +20,51 @@
         max-width: 600px;
         width: 100%;
     ">
-        <p><strong>Dirección:</strong> {{ direccion }}</p>
-        <p><strong>Teléfono:</strong> {{ telefono }}</p>
+        <p><strong>📍 Dirección:</strong> {{ direccion }}</p>
+        {% if colonia %}
+        <p><strong>🏘️ Colonia:</strong> {{ colonia }}</p>
+        {% endif %}
+        <p><strong>📞 Teléfono:</strong> {{ telefono }}</p>
         {% if numero_cliente %}
-        <p><strong>Número de cliente:</strong> {{ numero_cliente }}</p>
+        <p><strong>👤 Número de cliente:</strong> {{ numero_cliente }}</p>
+        {% endif %}
+        {% if horario_entrega %}
+        <p><strong>⏰ Horario de entrega:</strong> {{ horario_entrega }}</p>
         {% endif %}
 
-        <p><strong>Forma de pago:</strong> {{ pago }}</p>
+        <p><strong>💳 Forma de pago:</strong> {{ info_pago or pago }}</p>
+        
+        {% if pago == "Transferencia" %}
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #2196f3;">
+            <strong>🏦 Datos para transferencia:</strong><br>
+            <small>
+                CLABE: <strong>012180001234567890</strong><br>
+                Titular: <strong>Abarrotes Soto S.A. de C.V.</strong><br>
+                Banco: <strong>BBVA Bancomer</strong>
+            </small><br>
+            <small style="color: #1976d2;">
+                📱 Envía tu comprobante al WhatsApp <strong>55 7525 1742</strong>
+            </small>
+        </div>
+        {% endif %}
+        
         <hr>
-        <p><strong>Productos:</strong></p>
+        <p><strong>🛒 Productos:</strong></p>
         <ul style="padding-left: 20px; margin-bottom: 15px;">
             {% for p in carrito %}
             <li style="margin-bottom: 6px;">
                 {{ p['nombre'] }} × {{ p['cantidad'] }} = ${{ "%.2f"|format(p['precio'] * p['cantidad']) }}
                 {% if p.get('precio_original') and p['precio_original'] > p['precio'] %}
-                    (Ahorro ${{ "%.2f"|format((p['precio_original'] - p['precio']) * p['cantidad']) }})
+                    <span style="color: #4caf50;">(Ahorro ${{ "%.2f"|format((p['precio_original'] - p['precio']) * p['cantidad']) }})</span>
                 {% endif %}
             </li>
             {% endfor %}
         </ul>
-        <div class="total" style="font-weight: bold; color: #2e7d32; margin-top: 15px;">
-            Total: ${{ "%.2f"|format(total) }} — Ahorro: ${{ "%.2f"|format(ahorro) }}
+        <div class="total" style="font-weight: bold; color: #2e7d32; margin-top: 15px; font-size: 1.1em;">
+            💰 Total: ${{ "%.2f"|format(total) }}
+            {% if ahorro > 0 %}
+             — 🎉 Ahorro: ${{ "%.2f"|format(ahorro) }}
+            {% endif %}
         </div>
     </div>
 

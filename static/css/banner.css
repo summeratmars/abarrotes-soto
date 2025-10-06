@@ -36,6 +36,15 @@
     background-position: center;
     background-repeat: no-repeat;
     position: relative;
+    /* Fallback para cuando la imagen no carga */
+    background-color: #1a1a1a;
+    /* Gradiente de respaldo atractivo */
+    background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: transform 0.3s ease;
+}
+
+.banner-slide .banner-imagen:hover {
+    transform: scale(1.02);
 }
 
 .banner-slide .banner-imagen::before {
@@ -45,8 +54,13 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(0,0,0,0.5));
+    background: linear-gradient(45deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4));
     z-index: 1;
+    transition: background 0.3s ease;
+}
+
+.banner-slide:hover .banner-imagen::before {
+    background: linear-gradient(45deg, rgba(0,0,0,0.1), rgba(0,0,0,0.3));
 }
 
 .banner-slide .banner-content {
@@ -58,6 +72,11 @@
     color: white;
     z-index: 2;
     width: 90%;
+    transition: transform 0.3s ease;
+}
+
+.banner-slide:hover .banner-content {
+    transform: translate(-50%, -50%) scale(1.05);
 }
 
 .banner-slide .banner-content h2 {
@@ -74,7 +93,7 @@
 }
 
 .banner-slide .banner-cta {
-    background: #ff4444;
+    background: linear-gradient(45deg, #ff4444, #ff6666);
     color: white;
     padding: 8px 16px;
     border-radius: 20px;
@@ -82,12 +101,16 @@
     text-transform: uppercase;
     font-size: 12px;
     box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
     display: inline-block;
+    border: none;
+    cursor: pointer;
 }
 
 .banner-slide .banner-cta:hover {
-    transform: scale(1.05);
+    transform: scale(1.1);
+    background: linear-gradient(45deg, #ff6666, #ff4444);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.6);
 }
 
 .banner-overlay {
@@ -182,7 +205,7 @@
     
     .banner-slide img,
     .banner-slide .banner-imagen {
-        height: 150px;
+        height: 180px; /* Incrementado para mejor visualización */
     }
     
     .banner-overlay {
@@ -198,16 +221,17 @@
     }
     
     .banner-slide .banner-content h2 {
-        font-size: 20px;
+        font-size: 22px; /* Incrementado */
     }
     
     .banner-slide .banner-content p {
-        font-size: 12px;
+        font-size: 13px; /* Incrementado */
     }
     
     .banner-slide .banner-cta {
-        padding: 6px 12px;
-        font-size: 11px;
+        padding: 8px 14px; /* Incrementado */
+        font-size: 12px; /* Incrementado */
+        border-radius: 18px;
     }
     
     .banner-nav {
@@ -228,7 +252,7 @@
 @media (max-width: 480px) {
     .banner-slide img,
     .banner-slide .banner-imagen {
-        height: 120px;
+        height: 140px; /* Incrementado */
     }
     
     .banner-overlay {
@@ -244,12 +268,66 @@
     }
     
     .banner-slide .banner-content h2 {
-        font-size: 16px;
+        font-size: 18px; /* Incrementado */
         margin-bottom: 5px;
     }
     
     .banner-slide .banner-content p {
-        font-size: 11px;
+        font-size: 12px; /* Incrementado */
         margin-bottom: 8px;
+    }
+}
+
+/* Estilos para pantallas grandes (escritorio) */
+@media (min-width: 769px) {
+    .banner-container {
+        margin: 0 auto 30px auto;
+        border-radius: 15px;
+        max-width: 1400px; /* Incrementado */
+    }
+    
+    .banner-slide img,
+    .banner-slide .banner-imagen {
+        height: 280px; /* Incrementado para escritorio */
+    }
+    
+    .banner-slide .banner-content h2 {
+        font-size: 32px; /* Incrementado */
+        margin-bottom: 12px;
+    }
+    
+    .banner-slide .banner-content p {
+        font-size: 16px; /* Incrementado */
+        margin-bottom: 15px;
+    }
+    
+    .banner-slide .banner-cta {
+        padding: 12px 24px; /* Incrementado */
+        font-size: 14px; /* Incrementado */
+        border-radius: 25px;
+    }
+    
+    .banner-nav {
+        width: 50px; /* Incrementado */
+        height: 50px; /* Incrementado */
+        font-size: 22px; /* Incrementado */
+    }
+    
+    .banner-prev {
+        left: 20px;
+    }
+    
+    .banner-next {
+        right: 20px;
+    }
+    
+    .indicator {
+        width: 12px; /* Incrementado */
+        height: 12px; /* Incrementado */
+    }
+    
+    .banner-indicators {
+        bottom: 20px;
+        gap: 10px; /* Incrementado */
     }
 }

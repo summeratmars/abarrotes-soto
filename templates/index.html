@@ -78,6 +78,38 @@
         display: inline-block;
         font-size: 14px;
     }
+    
+    /* Estilos especiales para la página de ofertas */
+    .oferta-cantidad {
+        background: #fff3cd;
+        padding: 8px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border-left: 4px solid #ffc107;
+        animation: pulse-offer 2s infinite;
+    }
+    
+    @keyframes pulse-offer {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
+    
+    /* Hacer más prominentes los productos con descuento en la página de ofertas */
+    .categoria-ofertas .producto {
+        border: 2px solid #28a745;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+    }
+    
+    .categoria-ofertas .descuento-label {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+        animation: glow 1.5s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+        from { box-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
+        to { box-shadow: 0 0 15px rgba(255, 107, 107, 0.8); }
+    }
     .categoria-texto {
         font-size: 12px;
         color: #888;
@@ -182,6 +214,548 @@
     .boton-agregar.animar {
       transform: scale(1.15);
       transition: transform 0.2s ease;
+    }
+    
+    /* Estilos para paginación */
+    .paginacion-container .btn-paginacion:hover {
+        background: #1b5e20 !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+    
+    .paginacion-container .btn-paginacion:not([style*="background: #2e7d32"]):hover {
+        background: #e8f5e8 !important;
+        color: #1b5e20 !important;
+        border-color: #2e7d32 !important;
+    }
+    
+    @media (max-width: 768px) {
+        .paginacion-container {
+            margin: 20px 0 !important;
+        }
+        .paginacion {
+            padding: 10px !important;
+            gap: 4px !important;
+        }
+        .btn-paginacion, .pagina-actual, .btn-paginacion-disabled {
+            padding: 6px 8px !important;
+            font-size: 12px !important;
+            min-width: 32px !important;
+        }
+    }
+    
+    /* Estilos modernos para secciones de departamentos y categorías */
+    .departamentos-container, .categorias-container {
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        padding: 25px 20px;
+        margin-bottom: 30px;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .departamentos-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #2e7d32 0%, #4caf50 50%, #66bb6a 100%);
+    }
+    
+    .categorias-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #e65100 0%, #ff9800 50%, #ffb74d 100%);
+    }
+    
+    .section-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+    
+    .section-title {
+        color: #2e7d32;
+        font-size: 1.8em;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .section-title.secondary {
+        color: #e65100;
+        font-size: 1.5em;
+    }
+    
+    .section-title .icon {
+        font-size: 1.2em;
+    }
+    
+    .section-subtitle {
+        color: #666;
+        font-size: 1.1em;
+        margin: 0;
+        opacity: 0.9;
+    }
+    
+    .botones-modernos, .botones-categorias {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+    }
+    
+    .boton-categoria, .boton-subcategoria {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        margin: 0;
+        border-radius: 15px;
+        border: 2px solid #e0e0e0;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        color: #333;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        min-height: 48px;
+    }
+    
+    .boton-categoria:hover, .boton-subcategoria:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+        border-color: #2e7d32;
+        background: linear-gradient(145deg, #f8f9fa 0%, #e8f5e9 100%);
+        color: #1b5e20;
+        text-decoration: none;
+    }
+    
+    .boton-categoria.activo, .boton-subcategoria.activo {
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        color: white;
+        border-color: #2e7d32;
+        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+        transform: translateY(-1px);
+    }
+    
+    .boton-subcategoria.activo {
+        background: linear-gradient(135deg, #e65100 0%, #ff9800 100%);
+        border-color: #e65100;
+        box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3);
+    }
+    
+    .boton-categoria .icon, .boton-subcategoria .icon {
+        font-size: 1.3em;
+        transition: transform 0.3s ease;
+    }
+    
+    .boton-categoria:hover .icon, .boton-subcategoria:hover .icon {
+        transform: scale(1.1);
+    }
+    
+    .boton-categoria.activo .icon, .boton-subcategoria.activo .icon {
+        animation: bounce 0.6s ease;
+    }
+    
+    @keyframes bounce {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+    
+    /* Mejoras para productos */
+    .contenedor-productos {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 25px;
+        justify-content: center;
+        padding: 20px 0;
+    }
+    
+    .producto {
+        position: relative;
+        border-radius: 20px;
+        background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        margin: 0;
+        width: 100%;
+        max-width: none;
+        vertical-align: top;
+        text-align: center;
+        overflow: hidden;
+        transition: all 0.4s ease;
+        min-height: 450px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .producto:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        border-color: #2e7d32;
+    }
+    
+    .producto img {
+        width: 100%;
+        height: 160px;
+        object-fit: contain;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        border-bottom: 1px solid #e0e0e0;
+        padding: 15px;
+        transition: transform 0.3s ease;
+    }
+    
+    .producto:hover img {
+        transform: scale(1.05);
+    }
+    
+    .contenido {
+        padding: 20px 15px 25px;
+        background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .nombre {
+        font-weight: 700;
+        font-size: 1.1em;
+        color: #333;
+        margin-bottom: 12px;
+        text-transform: capitalize;
+        line-height: 1.3;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .precio-descuento {
+        font-size: 1.8em;
+        font-weight: 800;
+        color: #2e7d32;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    .precio-normal {
+        font-size: 1.1em;
+        text-decoration: line-through;
+        color: #999;
+        margin-left: 8px;
+        opacity: 0.7;
+    }
+    
+    .descuento-label {
+        background: linear-gradient(135deg, #ff1744 0%, #f44336 100%);
+        color: white;
+        font-weight: 700;
+        padding: 8px 12px;
+        border-radius: 12px;
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        font-size: 0.9em;
+        box-shadow: 0 4px 12px rgba(255, 23, 68, 0.4);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .ahorro {
+        margin-top: 10px;
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        color: #2e7d32;
+        padding: 8px 15px;
+        border-radius: 12px;
+        display: inline-block;
+        font-size: 0.9em;
+        font-weight: 600;
+        border: 1px solid #4caf50;
+    }
+    
+    .boton-agregar {
+        width: 100%;
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        border: none;
+        border-radius: 15px;
+        color: white;
+        font-weight: 700;
+        padding: 15px;
+        font-size: 1.1em;
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-top: auto;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
+    }
+    
+    .boton-agregar:hover {
+        background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(46, 125, 50, 0.4);
+    }
+    
+    .boton-agregar:active {
+        transform: translateY(0);
+    }
+    
+    .boton-agregar.animar {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    /* Responsive mejorado */
+    @media (max-width: 768px) {
+        .section-title {
+            font-size: 1.5em;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .section-title.secondary {
+            font-size: 1.3em;
+        }
+        
+        .section-subtitle {
+            font-size: 1em;
+        }
+        
+        .botones-modernos, .botones-categorias {
+            gap: 8px;
+        }
+        
+        .boton-categoria, .boton-subcategoria {
+            padding: 10px 15px;
+            font-size: 0.9em;
+            min-height: 44px;
+        }
+        
+        .contenedor-productos {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 15px 0;
+        }
+        
+        .producto {
+            min-height: 380px;
+        }
+        
+        .producto img {
+            height: 140px;
+            padding: 10px;
+        }
+        
+        .nombre {
+            font-size: 1em;
+            min-height: 45px;
+        }
+        
+        .precio-descuento {
+            font-size: 1.6em;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .departamentos-container, .categorias-container {
+            padding: 20px 15px;
+            margin-bottom: 20px;
+        }
+        
+        .botones-modernos, .botones-categorias {
+            gap: 6px;
+        }
+        
+        .boton-categoria, .boton-subcategoria {
+            padding: 8px 12px;
+            font-size: 0.85em;
+            min-height: 40px;
+        }
+        
+        .contenedor-productos {
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        
+        .producto {
+            min-height: 350px;
+        }
+    }
+    
+    /* Estilos para banner de ofertas mejorado */
+    .ofertas-banner {
+        text-align: center;
+        margin: 30px 0;
+        padding: 30px 20px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        border-radius: 20px;
+        color: white;
+        box-shadow: 0 8px 30px rgba(238, 90, 82, 0.3);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .ofertas-banner::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(180deg); }
+    }
+    
+    .ofertas-title {
+        margin: 0;
+        font-size: 2.8em;
+        font-weight: 800;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .ofertas-subtitle {
+        margin: 15px 0;
+        font-size: 1.3em;
+        opacity: 0.9;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .ofertas-badge {
+        margin-top: 20px;
+        padding: 12px 25px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 25px;
+        display: inline-block;
+        border: 2px solid rgba(255,255,255,0.3);
+        backdrop-filter: blur(10px);
+        position: relative;
+        z-index: 2;
+    }
+    
+    .ofertas-badge span {
+        font-size: 1.2em;
+        font-weight: 700;
+    }
+    
+    .no-productos {
+        text-align: center;
+        padding: 60px 20px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 2px dashed #e0e0e0;
+        margin-bottom: 30px;
+    }
+    
+    .no-productos-icon {
+        font-size: 5em;
+        margin-bottom: 20px;
+        opacity: 0.7;
+    }
+    
+    .no-productos h3 {
+        color: #333;
+        font-size: 1.8em;
+        margin-bottom: 15px;
+        font-weight: 700;
+    }
+    
+    .no-productos p {
+        color: #666;
+        font-size: 1.2em;
+        margin-bottom: 30px;
+        line-height: 1.5;
+    }
+    
+    .btn-volver {
+        display: inline-block;
+        padding: 15px 30px;
+        background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+        color: white;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: 15px;
+        font-size: 1.1em;
+        box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-volver:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(46, 125, 50, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+    
+    /* Responsive para nuevos elementos */
+    @media (max-width: 768px) {
+        .ofertas-title {
+            font-size: 2.2em;
+        }
+        
+        .ofertas-subtitle {
+            font-size: 1.1em;
+        }
+        
+        .ofertas-badge span {
+            font-size: 1em;
+        }
+        
+        .no-productos {
+            padding: 40px 15px;
+        }
+        
+        .no-productos-icon {
+            font-size: 4em;
+        }
+        
+        .no-productos h3 {
+            font-size: 1.5em;
+        }
+        
+        .no-productos p {
+            font-size: 1.1em;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .ofertas-banner {
+            padding: 25px 15px;
+        }
+        
+        .ofertas-title {
+            font-size: 1.8em;
+        }
     }
 
 
@@ -315,7 +889,9 @@
     <div class="banner-slider">
         <!-- Banner 1: RIFA 2026 -->
         <a href="/rifa2026" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.jpg') }}');">
+            <div class="banner-imagen" 
+                 style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.png') }}?v=2025100601');"
+                 data-fallback="true">
                 <div class="banner-content">
                     <h2>🎯 RIFA 2026</h2>
                     <p>Cada compra te acerca a ganar increíbles premios</p>
@@ -333,7 +909,9 @@
         
         <!-- Banner 2: Ofertas especiales -->
         <a href="/productos?categoria=ofertas" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.jpg') }}');">
+            <div class="banner-imagen" 
+                 style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.png') }}?v=2025100601');"
+                 data-fallback="true">
                 <div class="banner-content">
                     <h2>🎉 OFERTAS ESPECIALES</h2>
                     <p>Hasta 50% de descuento en productos seleccionados</p>
@@ -400,8 +978,8 @@
       <div style="display: flex; overflow-x: auto; gap: 12px; scroll-snap-type: x mandatory; padding-bottom: 10px;">
         {% for p in prods[:8] %}
           <div class="producto" style="scroll-snap-align: start; flex: 0 0 65%; max-width: 65%;">
-            {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-              <div class="descuento-label">DESCUENTO</div>
+            {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] %}
+              <div class="descuento-label">{% if p['dCantMinPP2'] > 1 %}OFERTA x{{ p['dCantMinPP2'] }}{% else %}DESCUENTO{% endif %}</div>
             {% endif %}
             <img loading="lazy"
             src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
@@ -422,12 +1000,20 @@
               {% if p['nombre_unidad'] == 'KILOGRAMO' %}
                 <div style="font-size: 14px;">Precio por kilogramo:</div>
                 <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
-              {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-                <div>
-                  <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
-                  <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
-                </div>
-                <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+              {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] %}
+                {% if p['dCantMinPP2'] > 1 %}
+                  <div style="background: #fff3cd; padding: 6px; border-radius: 6px; margin-bottom: 6px; border-left: 3px solid #ffc107;">
+                    <div style="font-size: 11px; color: #856404; font-weight: bold;">🎯 Oferta x{{ p['dCantMinPP2'] }}</div>
+                    <div style="font-size: 16px; font-weight: bold; color: #28a745;">${{ '%.2f'|format(p['precio_venta2']) }} c/u</div>
+                    <div style="font-size: 10px; color: #856404;">Normal: ${{ '%.2f'|format(p['precio_venta']) }}</div>
+                  </div>
+                {% else %}
+                  <div>
+                    <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+                    <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+                  </div>
+                  <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+                {% endif %}
               {% else %}
                 <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
               {% endif %}
@@ -552,7 +1138,9 @@
     <div class="banner-slider">
         <!-- Banner 1: RIFA 2026 -->
         <a href="/rifa2026" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.jpg') }}');">
+            <div class="banner-imagen" 
+                 style="background-image: url('{{ url_for('static', filename='images/banners/RIFA2026.png') }}?v=2025100601');"
+                 data-fallback="true">
                 <div class="banner-content">
                     <h2>🎯 RIFA 2026</h2>
                     <p>Cada compra te acerca a ganar increíbles premios</p>
@@ -570,7 +1158,9 @@
         
         <!-- Banner 2: Ofertas especiales -->
         <a href="/productos?categoria=ofertas" class="banner-slide">
-            <div class="banner-imagen" style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.jpg') }}');">
+            <div class="banner-imagen" 
+                 style="background-image: url('{{ url_for('static', filename='images/banners/OFERTAS.png') }}?v=2025100601');"
+                 data-fallback="true">
                 <div class="banner-content">
                     <h2>🎉 OFERTAS ESPECIALES</h2>
                     <p>Hasta 50% de descuento en productos seleccionados</p>
@@ -596,34 +1186,127 @@
 </div>
 {% endif %}
 
-  <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
-    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
-    <div class="botones">
-        <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
+  <div class="departamentos-container">
+    <div class="section-header">
+      <h2 class="section-title">
+        <span class="icon">🏪</span>
+        Departamentos
+      </h2>
+      <p class="section-subtitle">Encuentra todo lo que necesitas organizados por secciones</p>
+    </div>
+    <div class="botones-modernos">
+        <a href="/" class="boton-categoria {{ 'activo' if not departamento }}">
+          <span class="icon">🛒</span>
+          <span>Todos</span>
+        </a>
         {% for dep in departamentos %}
-            <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
+            <a href="/?departamento={{ dep }}" class="boton-categoria {{ 'activo' if dep == departamento }}">
+              <span class="icon">
+                {% if dep == 'BEBES' %}👶
+                {% elif dep == 'BEBIDAS' %}🥤
+                {% elif dep == 'BELLEZA' %}💄
+                {% elif dep == 'BOTANAS' %}🍿
+                {% elif dep == 'CAFETERIA' %}☕
+                {% elif dep == 'CARNES' %}🥩
+                {% elif dep == 'CASA Y JARDÍN' %}🏡
+                {% elif dep == 'COCINA Y HOGAR' %}🍳
+                {% elif dep == 'CONDIMENTOS' %}🧂
+                {% elif dep == 'CUIDADO PERSONAL' %}🧴
+                {% elif dep == 'DESECHABLES' %}🗑️
+                {% elif dep == 'DESPENSA' %}🥫
+                {% elif dep == 'DULCERIA' %}🍭
+                {% elif dep == 'ELECTRÓNICOS' %}📱
+                {% elif dep == 'ENLATADOS' %}🥫
+                {% elif dep == 'GELATINAS Y POSTRES' %}🍮
+                {% elif dep == 'HERRAMIENTAS' %}🔧
+                {% elif dep == 'HIGIENE BUCAL' %}🦷
+                {% elif dep == 'HIGIENE PERSONAL' %}🧼
+                {% elif dep == 'ILUMINACIÓN' %}💡
+                {% elif dep == 'JARCERIA' %}🏺
+                {% elif dep == 'LACTEOS' %}🥛
+                {% elif dep == 'LIMPIEZA' %}🧽
+                {% elif dep == 'MASCOTAS' %}🐕
+                {% elif dep == 'MATERIAL DE CURACION' %}🩹
+                {% elif dep == 'MEDICAMENTO' %}💊
+                {% elif dep == 'PANADERIA' %}🍞
+                {% elif dep == 'SABORIZANTES Y JARABES' %}🍯
+                {% elif dep == 'SALSAS Y ADEREZOS' %}🫙
+                {% elif dep == 'SEMILLAS, GRANOS Y CHILES SECOS' %}🌱
+                {% elif dep == 'TABACO' %}🚬
+                {% elif dep == 'VINOS Y LICORES' %}🍷
+                {% else %}📦
+                {% endif %}
+              </span>
+              <span>{{ dep }}</span>
+            </a>
         {% endfor %}
     </div>
   </div>
 
   {% if categorias %}
-  <div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
-      <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
-      <div class="botones">
-          <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
+  <div class="categorias-container">
+      <div class="section-header">
+        <h3 class="section-title secondary">
+          <span class="icon">📂</span>
+          Categorías de {{ departamento }}
+        </h3>
+        <p class="section-subtitle">Explora productos específicos dentro de este departamento</p>
+      </div>
+      <div class="botones-categorias">
+          <a href="/?departamento={{ departamento }}" class="boton-subcategoria {{ 'activo' if not categoria }}">
+            <span class="icon">🎯</span>
+            <span>Todas</span>
+          </a>
           {% for cat in categorias %}
-              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="boton-subcategoria {{ 'activo' if cat == categoria }}">
+                <span class="icon">
+                  {% if 'ofertas' in cat.lower() %}🔥
+                  {% elif 'nuevo' in cat.lower() %}✨
+                  {% elif 'especial' in cat.lower() %}⭐
+                  {% else %}📦
+                  {% endif %}
+                </span>
+                <span>{{ cat }}</span>
+              </a>
           {% endfor %}
       </div>
   </div>
   {% endif %}
 {% endif %}
 
-  <div class="contenedor-productos">
+{% if categoria == 'ofertas' %}
+<div class="ofertas-banner">
+    <h1 class="ofertas-title">🎉 OFERTAS ESPECIALES 🎉</h1>
+    <p class="ofertas-subtitle">¡Los mejores descuentos te están esperando!</p>
+    <div class="ofertas-badge">
+        <span>💸 Ahorra hasta 50% en productos seleccionados</span>
+    </div>
+</div>
+{% endif %}
+
+  {% if not productos %}
+  <div class="no-productos">
+      <div class="no-productos-icon">📦</div>
+      <h3>No hay productos disponibles</h3>
+      <p>
+          {% if categoria %}
+              No se encontraron productos en la categoría "{{ categoria }}"
+          {% elif departamento %}
+              No se encontraron productos en el departamento "{{ departamento }}"
+          {% else %}
+              No se encontraron productos con los filtros aplicados
+          {% endif %}
+      </p>
+      <a href="/" class="btn-volver">🏠 Volver al inicio</a>
+  </div>
+  {% endif %}
+
+  <div class="contenedor-productos{% if categoria == 'ofertas' %} categoria-ofertas{% endif %}"
+       {% if productos|length == 0 %}style="display: none;"{% endif %}>
   {% for p in productos %}
     <div class="producto" style="position: relative;">
-      {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-        <div class="descuento-label">DESCUENTO</div>
+      {% if p['nombre_unidad'] != 'KILOGRAMO' and p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] %}
+        <div class="descuento-label">{% if p['dCantMinPP2'] > 1 %}OFERTA x{{ p['dCantMinPP2'] }}{% else %}DESCUENTO{% endif %}</div>
       {% endif %}
         <img 
         src="{{ url_for('static', filename='images/' + (p['cbarras'] | string | trim) + '.webp') }}?v={{ loop.index }}"
@@ -644,12 +1327,21 @@
         {% if p['nombre_unidad'] == 'KILOGRAMO' %}
           <div style="font-size: 14px;">Precio por kilogramo:</div>
           <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
-        {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] and p['dCantMinPP2'] == 1 %}
-          <div>
-            <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
-            <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
-          </div>
-          <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+        {% elif p['precio_venta2'] > 0 and p['precio_venta2'] < p['precio_venta'] %}
+          {% if p['dCantMinPP2'] > 1 %}
+            <div class="oferta-cantidad" style="background: #fff3cd; padding: 8px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #ffc107;">
+              <div style="font-size: 14px; color: #856404; font-weight: bold;">🎯 OFERTA POR CANTIDAD</div>
+              <div style="font-size: 12px; color: #856404;">Compra {{ p['dCantMinPP2'] }} o más y paga:</div>
+              <div style="font-size: 18px; font-weight: bold; color: #28a745;">${{ '%.2f'|format(p['precio_venta2']) }} c/u</div>
+              <div style="font-size: 12px; color: #856404;">Precio normal: ${{ '%.2f'|format(p['precio_venta']) }}</div>
+            </div>
+          {% else %}
+            <div>
+              <span class="precio-descuento">${{ '%.2f'|format(p['precio_venta2']) }}</span>
+              <span class="precio-normal">${{ '%.2f'|format(p['precio_venta']) }}</span>
+            </div>
+            <div class="ahorro">💸 Ahorra ${{ '%.2f'|format(p['precio_venta'] - p['precio_venta2']) }}</div>
+          {% endif %}
         {% else %}
           <div class="precio-descuento">${{ '%.2f'|format(p['precio_venta']) }}</div>
         {% endif %}
@@ -684,6 +1376,62 @@
 
 {% endif %}
 
+<!-- Paginación para escritorio -->
+{% if es_desktop and total_paginas > 1 %}
+<div class="paginacion-container" style="margin: 40px 0; text-align: center;">
+  <div class="paginacion" style="display: inline-flex; gap: 8px; align-items: center; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    
+    <!-- Botón Anterior -->
+    {% if pagina_actual > 1 %}
+      <a href="?{% if categoria_actual %}categoria={{ categoria_actual }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ pagina_actual - 1 }}" 
+         class="btn-paginacion" style="padding: 8px 12px; background: #2e7d32; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        ‹ Anterior
+      </a>
+    {% else %}
+      <span class="btn-paginacion-disabled" style="padding: 8px 12px; background: #e0e0e0; color: #999; border-radius: 6px; font-weight: bold;">
+        ‹ Anterior
+      </span>
+    {% endif %}
+    
+    <!-- Números de página -->
+    {% for pagina in range(1, total_paginas + 1) %}
+      {% if pagina == pagina_actual %}
+        <span class="pagina-actual" style="padding: 8px 12px; background: #2e7d32; color: white; border-radius: 6px; font-weight: bold; min-width: 40px; text-align: center;">
+          {{ pagina }}
+        </span>
+      {% elif pagina <= 3 or pagina > total_paginas - 3 or (pagina >= pagina_actual - 1 and pagina <= pagina_actual + 1) %}
+        <a href="?{% if categoria_actual %}categoria={{ categoria_actual }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ pagina }}" 
+           class="btn-paginacion" style="padding: 8px 12px; background: #f5f5f5; color: #333; text-decoration: none; border-radius: 6px; font-weight: bold; min-width: 40px; text-align: center; border: 1px solid #ddd;">
+          {{ pagina }}
+        </a>
+      {% elif pagina == 4 and pagina_actual > 5 %}
+        <span style="padding: 8px 4px; color: #999;">...</span>
+      {% elif pagina == total_paginas - 3 and pagina_actual < total_paginas - 4 %}
+        <span style="padding: 8px 4px; color: #999;">...</span>
+      {% endif %}
+    {% endfor %}
+    
+    <!-- Botón Siguiente -->
+    {% if pagina_actual < total_paginas %}
+      <a href="?{% if categoria_actual %}categoria={{ categoria_actual }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ pagina_actual + 1 }}" 
+         class="btn-paginacion" style="padding: 8px 12px; background: #2e7d32; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        Siguiente ›
+      </a>
+    {% else %}
+      <span class="btn-paginacion-disabled" style="padding: 8px 12px; background: #e0e0e0; color: #999; border-radius: 6px; font-weight: bold;">
+        Siguiente ›
+      </span>
+    {% endif %}
+  </div>
+  
+  <!-- Información de resultados -->
+  <div style="margin-top: 15px; color: #666; font-size: 14px;">
+    Mostrando {{ (pagina_actual - 1) * 20 + 1 }} - {{ (pagina_actual * 20) if (pagina_actual * 20) < total_productos else total_productos }} de {{ total_productos }} 
+    {% if categoria_actual == 'ofertas' %}productos con ofertas{% else %}productos{% endif %}
+  </div>
+</div>
+{% endif %}
+
 <div id="modalGramos" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);">
   <div style="background: white; padding: 20px; border-radius: 12px; max-width: 360px; margin: 100px auto; text-align: center;">
     <h3>¿Cuánto requieres?</h3>
@@ -704,6 +1452,171 @@
 </div>
 
 <script>
+// JavaScript para el carrusel de banners
+document.addEventListener('DOMContentLoaded', function() {
+    function initBannerCarousel(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const slider = container.querySelector('.banner-slider');
+        const slides = container.querySelectorAll('.banner-slide');
+        const prevBtn = container.querySelector('.banner-prev');
+        const nextBtn = container.querySelector('.banner-next');
+        const indicators = container.querySelectorAll('.indicator');
+        
+        if (!slider || slides.length === 0) return;
+        
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+        
+        // Función para ir a un slide específico
+        function goToSlide(index) {
+            currentSlide = index;
+            slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+            
+            // Actualizar indicadores
+            indicators.forEach((indicator, i) => {
+                indicator.classList.toggle('active', i === currentSlide);
+            });
+        }
+        
+        // Función para ir al siguiente slide
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            goToSlide(currentSlide);
+        }
+        
+        // Función para ir al slide anterior
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            goToSlide(currentSlide);
+        }
+        
+        // Event listeners para botones de navegación
+        if (nextBtn) {
+            nextBtn.addEventListener('click', nextSlide);
+        }
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', prevSlide);
+        }
+        
+        // Event listeners para indicadores
+        indicators.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => goToSlide(index));
+        });
+        
+        // Auto-slide cada 5 segundos
+        let autoSlideInterval = setInterval(nextSlide, 5000);
+        
+        // Pausar auto-slide cuando el mouse está sobre el carrusel
+        container.addEventListener('mouseenter', () => {
+            clearInterval(autoSlideInterval);
+        });
+        
+        container.addEventListener('mouseleave', () => {
+            autoSlideInterval = setInterval(nextSlide, 5000);
+        });
+        
+        // Soporte para touch/swipe en móviles
+        let startX = 0;
+        let currentX = 0;
+        let isDragging = false;
+        
+        slider.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isDragging = true;
+        });
+        
+        slider.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            currentX = e.touches[0].clientX;
+        });
+        
+        slider.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            
+            const diff = startX - currentX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
+        });
+    }
+    
+    // Inicializar carruseles
+    initBannerCarousel('bannerCarouselMobile');
+    initBannerCarousel('bannerCarouselDesktop');
+    
+    // Contador regresivo para la RIFA 2026
+    function initCountdownTimer() {
+        const targetDate = new Date('2026-01-16T20:00:00').getTime();
+        
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const timeLeft = targetDate - now;
+            
+            if (timeLeft > 0) {
+                const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                
+                const countdownText = `${days}d ${hours}h ${minutes}m`;
+                
+                // Actualizar ambos contadores (móvil y escritorio)
+                const mobileTimer = document.querySelector('#countdownTimerMobile .timeLeft');
+                const desktopTimer = document.querySelector('#countdownTimerDesktop .timeLeft');
+                
+                if (mobileTimer) mobileTimer.textContent = countdownText;
+                if (desktopTimer) desktopTimer.textContent = countdownText;
+            }
+        }
+        
+        // Actualizar inmediatamente y luego cada minuto
+        updateCountdown();
+        setInterval(updateCountdown, 60000);
+    }
+    
+    // Inicializar contador regresivo
+    initCountdownTimer();
+    
+    // Sistema de fallback para imágenes de banners
+    function initBannerImageFallback() {
+        const bannerImages = document.querySelectorAll('.banner-imagen[data-fallback="true"]');
+        
+        bannerImages.forEach(banner => {
+            const style = window.getComputedStyle(banner);
+            const backgroundImage = style.backgroundImage;
+            
+            // Extraer URL de la imagen
+            if (backgroundImage && backgroundImage !== 'none') {
+                const imageUrl = backgroundImage.replace(/url\(['"]?(.+?)['"]?\)/i, '$1');
+                
+                // Crear una imagen temporal para verificar si carga
+                const testImage = new Image();
+                testImage.onload = function() {
+                    // La imagen cargó correctamente, no hacer nada
+                };
+                testImage.onerror = function() {
+                    // La imagen no cargó, usar el gradiente de fallback
+                    banner.style.backgroundImage = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                    console.log('Banner image fallback applied for:', imageUrl);
+                };
+                testImage.src = imageUrl;
+            }
+        });
+    }
+    
+    // Inicializar fallback de imágenes de banners
+    initBannerImageFallback();
+});
+
+// Variables globales para el carrito
 let granelTemporal = {};
 
 function abrirSelectorGramos(cbarras, nombre, precio, precioOriginal, puntos) {

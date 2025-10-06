@@ -274,7 +274,9 @@ def obtener_productos_sucursal(
     departamento=None,
     categoria=None,
     query=None,
-    orden=None
+    orden=None,
+    pagina=1,
+    por_pagina=None
 ):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -305,8 +307,12 @@ def obtener_productos_sucursal(
         sql += ' AND d.nombre_dep = %s'
         params.append(departamento)
     if categoria:
-        sql += ' AND c.nombre_categoria = %s'
-        params.append(categoria)
+        # Lógica especial para mostrar productos con descuento cuando categoria=ofertas
+        if categoria.lower() == 'ofertas':
+            sql += ' AND ps.precio_venta2 > 0 AND ps.precio_venta2 < ps.precio_venta'
+        else:
+            sql += ' AND c.nombre_categoria = %s'
+            params.append(categoria)
     if query:
         sql += ' AND (LOWER(p.nombre_producto) LIKE %s OR LOWER(c.nombre_categoria) LIKE %s OR LOWER(d.nombre_dep) LIKE %s)'
         palabra = f"%{query.strip().lower()}%"
@@ -317,6 +323,12 @@ def obtener_productos_sucursal(
         sql += ' ORDER BY COALESCE(NULLIF(ps.precio_venta2,0), ps.precio_venta) ASC'
     elif orden == 'precio_desc':
         sql += ' ORDER BY COALESCE(NULLIF(ps.precio_venta2,0), ps.precio_venta) DESC'
+    
+    # Agregar paginación si se especifica
+    if por_pagina:
+        offset = (pagina - 1) * por_pagina
+        sql += f' LIMIT {por_pagina} OFFSET {offset}'
+    
     cursor.execute(sql, params)
     productos = cursor.fetchall()
     
@@ -331,3 +343,47 @@ def obtener_productos_sucursal(
     cursor.close()
     conn.close()
     return productos
+
+def contar_productos_sucursal(
+    sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549',
+    departamento=None,
+    categoria=None,
+    query=None
+):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    sql = '''
+        SELECT COUNT(*)
+        FROM producto p
+        JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
+        LEFT JOIN departamento d ON p.uuid_departamento = d.uuid_departamento
+        LEFT JOIN categoria c ON p.uuid_categoria = c.uuid_categoria
+        WHERE ps.uuid_sucursal = %s
+          AND ps.existencia >= 1
+          AND p.is_active = 1
+          AND ps.is_active = 1
+    '''
+    params = [sucursal_uuid]
+    
+    # Lógica especial para "ofertas" - productos con descuento
+    if categoria == 'ofertas':
+        sql += ' AND ps.precio_venta2 > 0 AND ps.precio_venta2 < ps.precio_venta'
+    elif departamento:
+        sql += ' AND d.nombre_dep = %s'
+        params.append(departamento)
+    elif categoria:
+        sql += ' AND c.nombre_categoria = %s'
+        params.append(categoria)
+    
+    if query:
+        sql += ' AND (LOWER(p.nombre_producto) LIKE %s OR LOWER(c.nombre_categoria) LIKE %s OR LOWER(d.nombre_dep) LIKE %s)'
+        palabra = f"%{query.strip().lower()}%"
+        params.extend([palabra, palabra, palabra])
+    
+    cursor.execute(sql, params)
+    total = cursor.fetchone()[0]
+    
+    cursor.close()
+    conn.close()
+    return total

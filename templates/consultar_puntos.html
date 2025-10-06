@@ -1,32 +1,356 @@
 {% extends base_template %}
 {% block contenido %}
-<div style="max-width:400px;margin:auto;padding:32px 0;">
-  <h2 style="color:#b30000;text-align:center;">Consultar puntos monedero</h2>
-  <form method="post" style="margin-top:24px;background:#fff;padding:24px 18px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-    <label for="busqueda" style="font-weight:bold;">Teléfono o número de cliente:</label>
-    <input type="text" name="busqueda" id="busqueda" placeholder="Ej. 5522334455 o 5020003" style="width:100%;padding:8px;margin-bottom:12px;border-radius:6px;border:1px solid #ccc;">
-    <button type="submit" style="width:100%;background:#b30000;color:#fff;font-weight:bold;padding:10px 0;border:none;border-radius:8px;font-size:1.1rem;">Consultar</button>
+<style>
+  .consulta-container {
+    max-width: 500px;
+    margin: auto;
+    padding: 40px 20px;
+  }
+  
+  .consulta-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  .consulta-header h1 {
+    color: #b30000;
+    font-size: 2.2em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 4px rgba(179, 0, 0, 0.1);
+  }
+  
+  .consulta-header p {
+    color: #666;
+    font-size: 1.1em;
+    margin: 0;
+  }
+  
+  .consulta-form {
+    background: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+    padding: 35px 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(179, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .consulta-form::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #b30000 0%, #d32f2f 50%, #b30000 100%);
+  }
+  
+  .form-group {
+    margin-bottom: 25px;
+  }
+  
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 1.1em;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    background: #fff;
+    box-sizing: border-box;
+  }
+  
+  .form-input:focus {
+    outline: none;
+    border-color: #b30000;
+    box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+  
+  .btn-consultar {
+    width: 100%;
+    background: linear-gradient(135deg, #b30000 0%, #d32f2f 100%);
+    color: white;
+    font-weight: 700;
+    padding: 16px 0;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-consultar:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #b30000 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(179, 0, 0, 0.3);
+  }
+  
+  .btn-consultar:active {
+    transform: translateY(0);
+  }
+  
+  .resultado-container {
+    margin-top: 30px;
+    background: linear-gradient(145deg, #e8f5e9 0%, #f1f8e9 100%);
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    border: 2px solid #4caf50;
+    animation: slideInUp 0.5s ease;
+  }
+  
+  .usuario-info {
+    margin-bottom: 25px;
+  }
+  
+  .usuario-nombre {
+    font-size: 1.8em;
+    color: #b30000;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+  }
+  
+  .puntos-display {
+    background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px 0;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+  }
+  
+  .puntos-numero {
+    font-size: 3em;
+    font-weight: 800;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .puntos-label {
+    font-size: 1.2em;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  
+  .equivalente-pesos {
+    background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 15px 0;
+    font-size: 1.3em;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+  }
+  
+  .btn-comprar {
+    display: inline-block;
+    padding: 15px 40px;
+    background: linear-gradient(135deg, #b30000 0%, #d32f2f 100%);
+    color: white;
+    font-weight: 700;
+    border-radius: 25px;
+    text-decoration: none;
+    font-size: 1.2em;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 6px 20px rgba(179, 0, 0, 0.3);
+  }
+  
+  .btn-comprar:hover {
+    background: linear-gradient(135deg, #d32f2f 0%, #b30000 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(179, 0, 0, 0.4);
+    color: white;
+    text-decoration: none;
+  }
+  
+  .error-container {
+    margin-top: 25px;
+    background: linear-gradient(145deg, #ffebee 0%, #fce4ec 100%);
+    color: #b30000;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1em;
+    border: 2px solid #f44336;
+    animation: shake 0.6s ease;
+  }
+  
+  .icon {
+    font-size: 1.5em;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  
+  @media (max-width: 768px) {
+    .consulta-container {
+      padding: 20px 15px;
+    }
+    
+    .consulta-form {
+      padding: 25px 20px;
+    }
+    
+    .consulta-header h1 {
+      font-size: 1.8em;
+    }
+    
+    .puntos-numero {
+      font-size: 2.5em;
+    }
+    
+    .btn-comprar {
+      padding: 12px 30px;
+      font-size: 1.1em;
+    }
+  }
+</style>
+
+<div class="consulta-container">
+  <div class="consulta-header">
+    <h1><span class="icon">💳</span>Consultar Puntos Monedero</h1>
+    <p>Verifica tus puntos de lealtad acumulados</p>
+  </div>
+  
+  <form method="post" class="consulta-form">
+    <div class="form-group">
+      <label for="busqueda" class="form-label">
+        <span class="icon">📞</span>Teléfono o número de cliente:
+      </label>
+      <input 
+        type="text" 
+        name="busqueda" 
+        id="busqueda" 
+        placeholder="Ej. 5522334455 o 5020003" 
+        class="form-input"
+        autocomplete="tel"
+        required
+      >
+    </div>
+    <button type="submit" class="btn-consultar">
+      <span class="icon">🔍</span>Consultar Puntos
+    </button>
   </form>
+  
   {% if puntos is not none %}
-    <div style="margin-top:24px;text-align:center;font-size:1.2em;color:#388e3c;font-weight:bold;">
-      {% if nombre_mascara %}
-        <div style="font-size:1.3em;color:#b30000;letter-spacing:2px;">{{ nombre_mascara }}</div>
-      {% endif %}
-      <div>Puntos lealtad: {{ puntos }}</div>
-      <span style="font-size:1em;color:#333;font-weight:normal;">Equivalente en pesos: 
-        {% if pesos is not none %}
-          ${{ '%.2f'|format(pesos) }}
-        {% else %}
-          No disponible
+    <div class="resultado-container">
+      <div class="usuario-info">
+        {% if nombre_mascara %}
+          <div class="usuario-nombre">
+            <span class="icon">👤</span>{{ nombre_mascara }}
+          </div>
         {% endif %}
-      </span>
-      <div style="margin-top:28px;">
-        <a href="/" style="display:inline-block;padding:10px 28px;background:#b30000;color:#fff;font-weight:bold;border-radius:8px;text-decoration:none;font-size:1.1em;">Comprar ahora</a>
+      </div>
+      
+      <div class="puntos-display">
+        <div class="puntos-numero">{{ puntos }}</div>
+        <div class="puntos-label">Puntos de Lealtad</div>
+      </div>
+      
+      {% if pesos is not none %}
+        <div class="equivalente-pesos">
+          <span class="icon">💰</span>Equivalente: ${{ '%.2f'|format(pesos) }} MXN
+        </div>
+      {% else %}
+        <div class="equivalente-pesos">
+          <span class="icon">💰</span>Equivalente no disponible
+        </div>
+      {% endif %}
+      
+      <div>
+        <a href="/" class="btn-comprar">
+          <span class="icon">🛒</span>Comprar Ahora
+        </a>
       </div>
     </div>
   {% endif %}
+  
   {% if error %}
-    <div style="margin-top:18px;color:#b30000;text-align:center;font-weight:bold;">{{ error }}</div>
+    <div class="error-container">
+      <span class="icon">⚠️</span>{{ error }}
+    </div>
   {% endif %}
 </div>
+
+<script>
+// Añadir animación al formulario cuando se carga la página
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.consulta-form');
+    const input = document.querySelector('.form-input');
+    
+    // Animación de entrada
+    form.style.opacity = '0';
+    form.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+        form.style.transition = 'all 0.6s ease';
+        form.style.opacity = '1';
+        form.style.transform = 'translateY(0)';
+    }, 100);
+    
+    // Auto-focus en el input
+    if (input) {
+        input.focus();
+    }
+    
+    // Validación en tiempo real
+    input.addEventListener('input', function() {
+        const value = this.value.trim();
+        const submitBtn = document.querySelector('.btn-consultar');
+        
+        if (value.length >= 7) {
+            submitBtn.style.background = 'linear-gradient(135deg, #4caf50 0%, #66bb6a 100%)';
+        } else {
+            submitBtn.style.background = 'linear-gradient(135deg, #b30000 0%, #d32f2f 100%)';
+        }
+    });
+    
+    // Formateo automático del número
+    input.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, ''); // Solo números
+        if (value.length > 10) {
+            value = value.substring(0, 10);
+        }
+        this.value = value;
+    });
+});
+</script>
 {% endblock %}

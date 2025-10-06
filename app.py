@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 import smtplib
 import pandas as pd
-from db_utils import get_db_connection, obtener_productos_sucursal, guardar_pedido_db
+from db_utils import get_db_connection, obtener_productos_sucursal, guardar_pedido_db, contar_productos_sucursal, contar_productos_sucursal
 from routes_imagenes import imagenes_bp
 import json
 import os
@@ -72,13 +72,31 @@ def index():
     departamento = request.args.get("departamento", "")
     categoria = request.args.get("categoria", "")
     orden = request.args.get("orden", "")
+    pagina = int(request.args.get('pagina', 1))
+    
+    # Paginación solo para escritorio (tanto página principal como ofertas)
+    es_desktop = not es_movil()
+    por_pagina = 20 if es_desktop else None
 
     productos = obtener_productos_sucursal(
         departamento=departamento if departamento else None,
         categoria=categoria if categoria else None,
         query=query if query else None,
-        orden=orden if orden else None
+        orden=orden if orden else None,
+        pagina=pagina,
+        por_pagina=por_pagina
     )
+    
+    # Datos para paginación (solo para escritorio)
+    total_productos = 0
+    total_paginas = 0
+    if es_desktop:
+        total_productos = contar_productos_sucursal(
+            departamento=departamento if departamento else None,
+            categoria=categoria if categoria else None,
+            query=query if query else None
+        )
+        total_paginas = (total_productos + por_pagina - 1) // por_pagina
 
     # Obtener departamentos y categorías únicos desde la base de datos
     conn = get_db_connection()
@@ -108,8 +126,21 @@ def index():
                     query=query,
                     departamento=departamento,
                     categoria=categoria,
+                    orden=orden,
                     departamentos=departamentos,
-                    categorias=categorias)
+                    categorias=categorias,
+                    categoria_actual=categoria,
+                    query_actual=query,
+                    orden_actual=orden,
+                    pagina_actual=pagina,
+                    total_paginas=total_paginas,
+                    total_productos=total_productos,
+                    es_desktop=es_desktop)
+
+@app.route('/productos')
+def productos():
+    # Redirigir a la página principal con los mismos parámetros
+    return index()
 
 @app.route('/cart')
 def ver_carrito():
@@ -138,7 +169,29 @@ def checkout():
             carrito_json = request.form.get("carrito_json")
             carrito = json.loads(carrito_json)
             colonia = request.form.get("colonia")
+            
+            # Nuevos campos del formulario mejorado
+            horario_entrega = request.form.get("horario_entrega", "")
+            pago_efectivo_cambio = request.form.get("pago_efectivo_cambio", "")
+            pago_efectivo_monto = request.form.get("pago_efectivo_monto", "")
+            
+            # Construir información detallada de pago
+            info_pago = pago
+            if pago == "Efectivo":
+                if pago_efectivo_cambio == "si" and pago_efectivo_monto:
+                    info_pago = f"Efectivo - Paga con ${pago_efectivo_monto} (necesita cambio)"
+                else:
+                    info_pago = "Efectivo - Pago justo"
+            elif pago == "Tarjeta":
+                info_pago = "Tarjeta (repartidor lleva terminal)"
+            elif pago == "Transferencia":
+                info_pago = "Transferencia SPEI"
+            
             session["colonia"] = colonia
+            session["horario_entrega"] = horario_entrega
+            session["info_pago"] = info_pago
+            session["pago_efectivo_cambio"] = pago_efectivo_cambio
+            session["pago_efectivo_monto"] = pago_efectivo_monto
 
 
             # Calculamos totales
@@ -248,9 +301,14 @@ def confirmacion():
     telefono = session.get("telefono", "")
     numero_cliente = session.get("numero_cliente", "")
     pago = session.get("pago", "")
+    info_pago = session.get("info_pago", pago)  # Información detallada del pago
+    horario_entrega = session.get("horario_entrega", "")
+    pago_efectivo_cambio = session.get("pago_efectivo_cambio", "")
+    pago_efectivo_monto = session.get("pago_efectivo_monto", "")
     carrito = session.get("carrito", [])
     total = session.get("total", 0)
     ahorro = session.get("ahorro", 0)
+    folio = session.get("folio", "")
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
@@ -286,26 +344,92 @@ def confirmacion():
         telefono_limpio = telefono.replace(" ", "").replace("-", "")
         enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
 
-        mensaje = f"""<b>🛒 NUEVO PEDIDO</b>\n\n
-<b>Cliente:</b> {nombre}
+        # Determinar emoji para el horario
+        horario_emoji = "🚀" if "antes posible" in horario_entrega.lower() else "⏰"
+        
+        # Determinar emoji y detalles para el método de pago
+        if pago == "Efectivo":
+            pago_emoji = "💵"
+            # Validar que las variables de efectivo existan antes de usarlas
+            efectivo_cambio = pago_efectivo_cambio if 'pago_efectivo_cambio' in locals() else ""
+            efectivo_monto = pago_efectivo_monto if 'pago_efectivo_monto' in locals() else ""
+            
+            if efectivo_cambio == "si" and efectivo_monto:
+                try:
+                    monto = float(efectivo_monto)
+                    cambio = monto - total
+                    pago_detalle = f"Paga con ${monto:.2f} (necesita cambio de ${cambio:.2f})"
+                except (ValueError, TypeError):
+                    pago_detalle = "Pago justo (sin cambio)"
+            else:
+                pago_detalle = "Pago justo (sin cambio)"
+        elif pago == "Tarjeta":
+            pago_emoji = "💳"
+            pago_detalle = "Repartidor llevará terminal bancaria\n• Acepta débito y crédito\n• Visa, MasterCard, AmEx\n• Sin comisiones"
+        elif pago == "Transferencia":
+            pago_emoji = "🏦"
+            pago_detalle = "SPEI/Transferencia bancaria\n• CLABE: 032180000118359719\n• Banco: INBURSA\n• A nombre de: ABARROTES SOTO"
+        else:
+            pago_emoji = "💰"
+            pago_detalle = info_pago
+
+        mensaje = f"""🛒 <b>NUEVO PEDIDO RECIBIDO</b>
+
+👤 <b>DATOS DEL CLIENTE</b>
+<b>Nombre:</b> {nombre}
 <b>Dirección:</b> {direccion}
 <b>Colonia:</b> {colonia}
-<b>Teléfono:</b> {telefono}\n
-<b>Productos:</b>"""
+<b>Teléfono:</b> {telefono}"""
 
+        if numero_cliente:
+            mensaje += f"\n<b>N° Cliente:</b> {numero_cliente}"
+
+        mensaje += f"""
+
+{horario_emoji} <b>HORARIO DE ENTREGA</b>
+<b>{horario_entrega}</b>
+
+{pago_emoji} <b>MÉTODO DE PAGO</b>
+<b>{pago}</b>
+{pago_detalle}
+
+📦 <b>PRODUCTOS PEDIDOS</b>"""
+
+        # Agregar productos con mejor formato
         for p in carrito:
-            mensaje += f"\n- {p['nombre']} ({p['cantidad']} x ${p['precio']:.2f}) = ${p['cantidad'] * p['precio']:.2f}"
+            precio_unitario = p['precio']
+            cantidad = p['cantidad']
+            subtotal = cantidad * precio_unitario
+            
+            # Mostrar si hay descuento
+            if p.get('precio_original') and p['precio_original'] > precio_unitario:
+                descuento = p['precio_original'] - precio_unitario
+                mensaje += f"\n• {p['nombre']}"
+                mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
+                mensaje += f"\n  💸 Descuento: ${descuento:.2f} c/u"
+            else:
+                mensaje += f"\n• {p['nombre']}"
+                mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
 
-        mensaje += f"""\n\n<b>Método de pago:</b> {pago}
-<b>Total:</b> ${total:.2f}"""
-
+        mensaje += f"""\n\n💰 <b>RESUMEN FINANCIERO</b>"""
+        
         if ahorro > 0:
-            mensaje += f"\n<b>Ahorro:</b> ${ahorro:.2f}"
+            subtotal_original = total + ahorro
+            mensaje += f"\n<b>Subtotal:</b> ${subtotal_original:.2f}"
+            mensaje += f"\n<b>Descuentos:</b> -${ahorro:.2f}"
+            mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
+        else:
+            mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
 
-        mensaje += f"\n\n<b>Fecha:</b> {fecha_hora_mx}"
+        mensaje += f"""\n\n📅 <b>INFORMACIÓN ADICIONAL</b>
+<b>Fecha/Hora:</b> {fecha_hora_mx}
+<b>Folio:</b> #{folio if folio else 'N/A'}"""
 
-        # Agregar enlace de WhatsApp
-        mensaje += f"\n\n<b>Contactar por WhatsApp:</b> <a href=\"{enlace_whatsapp}\">Abrir chat</a>"
+        # Agregar enlace de WhatsApp con mejor formato
+        mensaje += f"""\n\n📱 <b>CONTACTO DIRECTO</b>
+<a href="{enlace_whatsapp}">💬 Abrir chat de WhatsApp</a>
+
+🚛 <i>Procesando pedido para entrega...</i>"""
 
         send_telegram_message(mensaje)
 
@@ -316,9 +440,12 @@ def confirmacion():
                            base_template=plantilla_base,
                            nombre=nombre,
                            direccion=direccion,
+                           colonia=colonia,
                            telefono=telefono,
                            numero_cliente=numero_cliente,
                            pago=pago,
+                           info_pago=info_pago,
+                           horario_entrega=horario_entrega,
                            carrito=carrito,
                            total=total,
                            ahorro=ahorro,
