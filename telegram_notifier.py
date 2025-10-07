@@ -192,7 +192,20 @@ def send_enhanced_telegram_notification(nombre, direccion, colonia, telefono, nu
 <b>{horario_entrega}</b>
 
 💳 <b>MÉTODO DE PAGO</b>
-{info_pago}
+{info_pago}"""
+
+        # Agregar datos bancarios si es transferencia
+        if 'transferencia' in info_pago.lower() or 'spei' in info_pago.lower():
+            mensaje += f"""
+
+🏦 <b>DATOS PARA TRANSFERENCIA</b>
+<b>Banco:</b> BANAMEX
+<b>Titular:</b> EFREN UZIEL SOTO JAIMES
+<b>Tarjeta:</b> <code>5204 1662 0566 9791</code>
+
+⚠️ <i>El cliente debe enviar comprobante de pago</i>"""
+
+        mensaje += f"""
 
 📦 <b>PRODUCTOS PEDIDOS</b>"""
         
