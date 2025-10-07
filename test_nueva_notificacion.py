@@ -67,7 +67,7 @@ def test_notificacion_mejorada():
         pago_detalle = "Repartidor llevará terminal bancaria\n• Acepta débito y crédito\n• Visa, MasterCard, AmEx\n• Sin comisiones"
     elif pago == "Transferencia":
         pago_emoji = "🏦"
-        pago_detalle = "SPEI/Transferencia bancaria\n• CLABE: 032180000118359719\n• Banco: INBURSA\n• A nombre de: ABARROTES SOTO"
+        pago_detalle = "SPEI/Transferencia bancaria\n• CLABE: 5204 1662 0566 9791\n• Banco: BANAMEX\n• A nombre de: EFREN UZIEL SOTO JAIMES"
     else:
         pago_emoji = "💰"
         pago_detalle = pago
