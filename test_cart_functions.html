@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Cart Functions</title>
+</head>
+<body>
+    <h1>Test de Funciones del Carrito</h1>
+    <div id="resultado"></div>
+    
+    <script>
+        // Simular un carrito
+        const carritoTest = [
+            {
+                cbarras: '7501000132706',
+                nombre: 'Producto Test',
+                precio: 20,
+                precio_base: 20,
+                precio_mayoreo: 18,
+                cantidad_mayoreo: 3,
+                cantidad: 2,
+                puntos: 5
+            }
+        ];
+        
+        localStorage.setItem('carrito', JSON.stringify(carritoTest));
+        
+        // Definir la función modificarCantidad
+        window.modificarCantidad = function(idx, cambio) {
+            console.log('✅ modificarCantidad llamada:', idx, cambio);
+            let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            if (!carrito[idx]) {
+                console.error('❌ Producto no encontrado en índice:', idx);
+                return;
+            }
+            
+            carrito[idx].cantidad += cambio;
+            
+            if (carrito[idx].cantidad <= 0) {
+                carrito.splice(idx, 1);
+            } else {
+                const item = carrito[idx];
+                if (item.precio_base && item.precio_mayoreo && item.cantidad_mayoreo) {
+                    if (item.cantidad >= item.cantidad_mayoreo && item.precio_mayoreo > 0) {
+                        item.precio = item.precio_mayoreo;
+                        console.log('💼 Precio mayoreo aplicado:', item.precio);
+                    } else {
+                        item.precio = item.precio_base;
+                        console.log('💰 Precio normal aplicado:', item.precio);
+                    }
+                }
+            }
+            
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            mostrarResultado();
+        };
+        
+        function mostrarResultado() {
+            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            const div = document.getElementById('resultado');
+            
+            if (carrito.length === 0) {
+                div.innerHTML = '<p>Carrito vacío</p>';
+                return;
+            }
+            
+            let html = '<h2>Productos en el carrito:</h2>';
+            carrito.forEach((p, idx) => {
+                html += `
+                    <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                        <p><strong>${p.nombre}</strong></p>
+                        <p>Cantidad: ${p.cantidad}</p>
+                        <p>Precio unitario: $${p.precio}</p>
+                        <p>Subtotal: $${(p.precio * p.cantidad).toFixed(2)}</p>
+                        <button onclick="modificarCantidad(${idx}, -1)">−</button>
+                        <button onclick="modificarCantidad(${idx}, 1)">+</button>
+                    </div>
+                `;
+            });
+            
+            div.innerHTML = html;
+        }
+        
+        // Mostrar carrito inicial
+        mostrarResultado();
+        
+        console.log('🔍 Verificando funciones:');
+        console.log('typeof modificarCantidad:', typeof modificarCantidad);
+        console.log('typeof window.modificarCantidad:', typeof window.modificarCantidad);
+    </script>
+</body>
+</html>

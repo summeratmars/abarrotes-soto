@@ -50,6 +50,14 @@ function actualizarBotonCarrito() {
     }
 }
 
+// ✅ Función auxiliar para calcular el precio según cantidad
+function calcularPrecioSegunCantidad(cantidad, precioNormal, precioMayoreo, cantidadMayoreo) {
+    if (precioMayoreo > 0 && cantidadMayoreo > 0 && cantidad >= cantidadMayoreo) {
+        return precioMayoreo;
+    }
+    return precioNormal;
+}
+
 // ✅ Agrega 1 unidad de un producto
 function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntosLealtad = 0) {
     // 🔄 Agrega animación al botón "Agregar"
@@ -59,12 +67,30 @@ function incrementarCantidad(cbarras, nombre, precio, precioOriginal, puntosLeal
         setTimeout(() => boton.classList.remove("animar"), 200);
     }
 
+    // Obtener datos de mayoreo
+    const div = document.getElementById("control-" + cbarras);
+    const precioMayoreo = parseFloat(div.dataset.precioMayoreo) || 0;
+    const cantidadMayoreo = parseInt(div.dataset.cantidadMayoreo) || 0;
+
     // ✅ Agregar al carrito
     let existente = carrito.find(p => p.cbarras === cbarras);
     if (existente) {
         existente.cantidad += 1;
+        // Recalcular precio según nueva cantidad
+        existente.precio = calcularPrecioSegunCantidad(existente.cantidad, precio, precioMayoreo, cantidadMayoreo);
     } else {
-        carrito.push({ cbarras, nombre, precio, precio_original: precioOriginal, cantidad: 1, puntos: puntosLealtad });
+        const precioInicial = calcularPrecioSegunCantidad(1, precio, precioMayoreo, cantidadMayoreo);
+        carrito.push({ 
+            cbarras, 
+            nombre, 
+            precio: precioInicial, 
+            precio_original: precioOriginal,
+            precio_mayoreo: precioMayoreo,
+            cantidad_mayoreo: cantidadMayoreo,
+            precio_base: precio,
+            cantidad: 1, 
+            puntos: puntosLealtad 
+        });
     }
 
     localStorage.setItem('carrito', JSON.stringify(carrito));
@@ -87,6 +113,16 @@ function modificarCantidad(cbarras, cambio) {
             carrito.splice(index, 1);
             restaurarAgregar(cbarras);
         } else {
+            // Recalcular precio según nueva cantidad
+            const item = carrito[index];
+            if (item.precio_base && item.precio_mayoreo && item.cantidad_mayoreo) {
+                item.precio = calcularPrecioSegunCantidad(
+                    item.cantidad, 
+                    item.precio_base, 
+                    item.precio_mayoreo, 
+                    item.cantidad_mayoreo
+                );
+            }
             renderControlCantidad(cbarras, carrito[index].cantidad);
         }
         localStorage.setItem('carrito', JSON.stringify(carrito));

@@ -1,14 +1,55 @@
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash, session
 import json
 import re
-from db_utils import obtener_productos_sucursal, guardar_cotizacion_web, registrar_cliente_monedero, obtener_cliente_por_telefono
+from db_utils import obtener_productos_sucursal, guardar_cotizacion_web, registrar_cliente_monedero, obtener_cliente_por_telefono, contar_productos_sucursal
 
 main_routes = Blueprint('main_routes', __name__)
 
 @main_routes.route('/')
 def index():
+    # Obtener parámetros de la URL
+    departamento = request.args.get('departamento')
+    categoria = request.args.get('categoria')
+    query = request.args.get('q', '').strip()
+    orden = request.args.get('orden', '')
+    pagina = int(request.args.get('pagina', 1))
+    
+    # Lista de departamentos para el menú
     departamentos = ['Abarrotes', 'Bebidas', 'Dulces y Snacks', 'Lácteos', 'Carnes y Embutidos', 'Limpieza', 'Cuidado Personal']
-    return render_template('index.html', departamentos=departamentos)
+    
+    # Obtener productos con filtros
+    productos_por_pagina = 20
+    productos = obtener_productos_sucursal(
+        departamento=departamento,
+        categoria=categoria,
+        query=query if query else None,
+        orden=orden if orden else None,
+        pagina=pagina,
+        por_pagina=productos_por_pagina
+    )
+    
+    # Contar total de productos para paginación
+    total_productos = contar_productos_sucursal(
+        departamento=departamento,
+        categoria=categoria,
+        query=query if query else None
+    )
+    
+    total_paginas = (total_productos + productos_por_pagina - 1) // productos_por_pagina
+    
+    return render_template(
+        'index.html',
+        departamentos=departamentos,
+        departamento=departamento,
+        categoria=categoria,
+        productos=productos,
+        query_actual=query,
+        orden_actual=orden,
+        pagina_actual=pagina,
+        total_paginas=total_paginas,
+        total_productos=total_productos,
+        categoria_actual=categoria
+    )
 
 @main_routes.route('/api/productos')
 def api_productos():

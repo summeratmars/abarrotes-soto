@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Carrito - Precios Mayoreo</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>🛠️ Debug de Carrito - Precios Mayoreo</h1>
+    
+    <div id="debug-info"></div>
+    
+    <script>
+        // Script para debuggear el carrito
+        function debugCarrito() {
+            console.log("🔍 INICIANDO DEBUG DEL CARRITO");
+            
+            // 1. Verificar localStorage
+            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            console.log("🛒 Carrito actual:", carrito);
+            
+            let debugHtml = "<h2>🛒 Contenido del Carrito</h2>";
+            
+            if (carrito.length === 0) {
+                debugHtml += "<p>❌ El carrito está vacío</p>";
+            } else {
+                carrito.forEach((producto, index) => {
+                    debugHtml += `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                            <h3>📦 Producto ${index + 1}: ${producto.nombre}</h3>
+                            <p><strong>Código de barras:</strong> ${producto.cbarras}</p>
+                            <p><strong>Cantidad:</strong> ${producto.cantidad}</p>
+                            <p><strong>Precio (guardado en carrito):</strong> $${producto.precio}</p>
+                            <p><strong>Precio original:</strong> $${producto.precio_original || 'No definido'}</p>
+                            <p><strong>Precio mayoreo:</strong> $${producto.precio_mayoreo || 'No definido'}</p>
+                            <p><strong>Cantidad mínima mayoreo:</strong> ${producto.cantidad_mayoreo || 'No definido'}</p>
+                            <p><strong>Precio oferta:</strong> $${producto.precio_oferta || 'No definido'}</p>
+                            <p><strong>Cantidad mínima oferta:</strong> ${producto.cantidad_oferta || 'No definido'}</p>
+                            
+                            <div style="background: #f0f8ff; padding: 10px; margin: 10px 0; border-radius: 5px;">
+                                <h4>🧮 Cálculo de precio aplicable:</h4>
+                                ${calcularYMostrarPrecio(producto)}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            // 2. Verificar si existe la función calcularPrecioAplicable
+            debugHtml += "<h2>🔧 Funciones disponibles</h2>";
+            debugHtml += `<p>calcularPrecioAplicable: ${typeof calcularPrecioAplicable !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}</p>`;
+            
+            document.getElementById('debug-info').innerHTML = debugHtml;
+        }
+        
+        function calcularYMostrarPrecio(producto) {
+            const cantidad = producto.cantidad;
+            const precioNormal = producto.precio_original || producto.precio;
+            const precioMayoreo = producto.precio_mayoreo || 0;
+            const cantidadMayoreo = producto.cantidad_mayoreo || 0;
+            const precioOferta = producto.precio_oferta || 0;
+            const cantidadOferta = producto.cantidad_oferta || 0;
+            
+            let resultado = `
+                <p><strong>Cantidad actual:</strong> ${cantidad}</p>
+                <p><strong>Precio normal:</strong> $${precioNormal}</p>
+            `;
+            
+            // Prioridad: Mayoreo > Oferta > Normal
+            if (precioMayoreo > 0 && cantidadMayoreo > 0 && cantidad >= cantidadMayoreo) {
+                const ahorro = precioNormal - precioMayoreo;
+                resultado += `
+                    <p style="color: #0277bd; font-weight: bold;">🏪 APLICANDO PRECIO MAYOREO</p>
+                    <p>Precio mayoreo: $${precioMayoreo} (desde ${cantidadMayoreo} pzs)</p>
+                    <p>Ahorro por pieza: $${ahorro}</p>
+                    <p>Ahorro total: $${(ahorro * cantidad).toFixed(2)}</p>
+                    <p><strong>Total: $${(precioMayoreo * cantidad).toFixed(2)}</strong></p>
+                `;
+            } else if (precioOferta > 0 && cantidadOferta > 0 && cantidad >= cantidadOferta) {
+                const ahorro = precioNormal - precioOferta;
+                resultado += `
+                    <p style="color: #f57c00; font-weight: bold;">🎯 APLICANDO PRECIO OFERTA</p>
+                    <p>Precio oferta: $${precioOferta} (desde ${cantidadOferta} pzs)</p>
+                    <p>Ahorro por pieza: $${ahorro}</p>
+                    <p>Ahorro total: $${(ahorro * cantidad).toFixed(2)}</p>
+                    <p><strong>Total: $${(precioOferta * cantidad).toFixed(2)}</strong></p>
+                `;
+            } else {
+                resultado += `
+                    <p style="color: #666;">📝 APLICANDO PRECIO NORMAL</p>
+                    <p><strong>Total: $${(precioNormal * cantidad).toFixed(2)}</strong></p>
+                `;
+                
+                if (precioMayoreo > 0 && cantidadMayoreo > 0) {
+                    resultado += `<p style="color: #999;">ℹ️ Precio mayoreo disponible desde ${cantidadMayoreo} piezas</p>`;
+                }
+                if (precioOferta > 0 && cantidadOferta > 0) {
+                    resultado += `<p style="color: #999;">ℹ️ Precio oferta disponible desde ${cantidadOferta} piezas</p>`;
+                }
+            }
+            
+            return resultado;
+        }
+        
+        // Función para limpiar el carrito (para testing)
+        function limpiarCarrito() {
+            if (confirm('¿Estás seguro de que quieres limpiar el carrito?')) {
+                localStorage.removeItem('carrito');
+                debugCarrito();
+            }
+        }
+        
+        // Función para agregar producto de prueba con mayoreo
+        function agregarProductoPrueba() {
+            const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+            const productoPrueba = {
+                cbarras: 'TEST123',
+                nombre: 'SAL LA FINA - PRODUCTO DE PRUEBA',
+                precio: 68,
+                precio_original: 68,
+                precio_mayoreo: 58,
+                cantidad_mayoreo: 3,
+                precio_oferta: 0,
+                cantidad_oferta: 0,
+                cantidad: 3,
+                puntos: 5
+            };
+            
+            carrito.push(productoPrueba);
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            debugCarrito();
+        }
+        
+        // Ejecutar debug al cargar la página
+        window.onload = function() {
+            debugCarrito();
+        };
+    </script>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="debugCarrito()" style="padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 5px;">🔍 Actualizar Debug</button>
+        <button onclick="agregarProductoPrueba()" style="padding: 10px 20px; margin: 5px; background: #28a745; color: white; border: none; border-radius: 5px;">➕ Agregar Producto de Prueba</button>
+        <button onclick="limpiarCarrito()" style="padding: 10px 20px; margin: 5px; background: #dc3545; color: white; border: none; border-radius: 5px;">🗑️ Limpiar Carrito</button>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+        <h3>📋 Instrucciones:</h3>
+        <ol>
+            <li>Abre esta página en tu navegador</li>
+            <li>Ve al sitio principal (http://127.0.0.1:5000) en otra pestaña</li>
+            <li>Agrega productos al carrito</li>
+            <li>Regresa a esta pestaña y haz clic en "🔍 Actualizar Debug"</li>
+            <li>Revisa la información detallada del carrito</li>
+        </ol>
+    </div>
+</body>
+</html>

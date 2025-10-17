@@ -51,7 +51,7 @@ def guardar_cotizacion_web(carrito, observaciones="Generado por tienda en línea
             # Consultar información completa del producto desde BD
             cursor.execute('''
                 SELECT p.cbarras, p.nombre_producto, ps.precio_venta, ps.precio_venta2, 
-                       ps.dCantMinPP2, u.clave_unidad, p.is_granel
+                       ps.dCantMinPP2, u.clave_unidad, p.is_granel, ps.precio_venta3, ps.dCantMinPP3
                 FROM producto p
                 JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
                 LEFT JOIN c_unidad u ON p.clave_unidad = u.clave_unidad
@@ -67,13 +67,20 @@ def guardar_cotizacion_web(carrito, observaciones="Generado por tienda en línea
                 unidad_correcta = producto_info[5] or "PZA"
                 nombre_producto = producto_info[1]
                 is_granel = producto_info[6] or 0
+                precio_venta3 = float(producto_info[7]) if producto_info[7] else 0.0
+                dcantminpp3 = float(producto_info[8]) if producto_info[8] else 0.0
                 
                 # Calcular precio aplicable y descuento
                 precio_aplicable = precio_venta
                 descuento_unitario = 0.0
                 
-                # Si hay precio2 y la cantidad cumple el mínimo, aplicar descuento
-                if precio_venta2 > 0 and dcantminpp2 > 0 and cantidad >= dcantminpp2:
+                # Prioridad: Mayoreo (precio3) > Oferta (precio2) > Normal
+                if precio_venta3 > 0 and dcantminpp3 > 0 and cantidad >= dcantminpp3:
+                    # Aplica precio de mayoreo
+                    descuento_unitario = precio_venta - precio_venta3
+                    precio_aplicable = precio_venta3
+                elif precio_venta2 > 0 and dcantminpp2 > 0 and cantidad >= dcantminpp2:
+                    # Aplica precio de oferta por cantidad
                     descuento_unitario = precio_venta - precio_venta2
                     precio_aplicable = precio_venta2
                 
@@ -278,6 +285,12 @@ def obtener_productos_sucursal(
     pagina=1,
     por_pagina=None
 ):
+    # DEBUG: Ver qué parámetros llegan a la función
+    print(f"🔍 DEBUG obtener_productos_sucursal():")
+    print(f"   departamento: '{departamento}'")
+    print(f"   categoria: '{categoria}'")
+    print(f"   query: '{query}'")
+    
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     sql = '''
@@ -287,6 +300,8 @@ def obtener_productos_sucursal(
             ps.precio_venta,
             ps.precio_venta2,
             ps.dCantMinPP2,
+            ps.precio_venta3,
+            ps.dCantMinPP3,
             ps.existencia,
             p.puntos_lealtad,
             d.nombre_dep AS nombre_departamento,
@@ -294,8 +309,8 @@ def obtener_productos_sucursal(
             u.nombre_unidad
         FROM producto p
         JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
-        LEFT JOIN departamento d ON p.uuid_departamento = d.uuid_departamento
         LEFT JOIN categoria c ON p.uuid_categoria = c.uuid_categoria
+        LEFT JOIN departamento d ON c.uuid_departamento = d.uuid_departamento
         LEFT JOIN c_unidad u ON p.clave_unidad = u.clave_unidad
         WHERE ps.uuid_sucursal = %s
           AND ps.existencia >= 1

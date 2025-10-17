@@ -5,6 +5,7 @@ from unidecode import unidecode
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 from functools import wraps
+from dotenv import load_dotenv
 import smtplib
 import pandas as pd
 from db_utils import get_db_connection, obtener_productos_sucursal, guardar_pedido_db, contar_productos_sucursal, contar_productos_sucursal
@@ -15,6 +16,9 @@ import csv
 import shutil
 import secrets
 import pytz
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Zona horaria de México
 mexico_timezone = pytz.timezone('America/Mexico_City')
@@ -73,6 +77,12 @@ def index():
     categoria = request.args.get("categoria", "")
     orden = request.args.get("orden", "")
     pagina = int(request.args.get('pagina', 1))
+    
+    # DEBUG: Ver qué parámetros llegan
+    print(f"🔍 DEBUG - Parámetros recibidos:")
+    print(f"   departamento: '{departamento}'")
+    print(f"   categoria: '{categoria}'")
+    print(f"   query: '{query}'")
     
     # Paginación solo para escritorio (tanto página principal como ofertas)
     es_desktop = not es_movil()

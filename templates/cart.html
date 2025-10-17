@@ -504,28 +504,51 @@
 <script>
 // Hacer las funciones disponibles globalmente
 window.modificarCantidad = function(idx, cambio) {
-    console.log('Modificando cantidad:', idx, cambio); // Debug
+    console.log('✅ modificarCantidad iniciada - idx:', idx, 'cambio:', cambio);
+    
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    console.log('📦 Carrito actual:', carrito);
+    
     if (!carrito[idx]) {
-        console.error('Producto no encontrado en índice:', idx);
+        console.error('❌ Producto no encontrado en índice:', idx);
         return;
     }
     
     const cantidadAnterior = carrito[idx].cantidad;
+    console.log('🔢 Cantidad anterior:', cantidadAnterior);
+    
     carrito[idx].cantidad += cambio;
+    console.log('🔢 Nueva cantidad calculada:', carrito[idx].cantidad);
     
     // Validar que la cantidad no sea menor a 1
     if (carrito[idx].cantidad <= 0) {
         if (confirm('¿Estás seguro de que quieres eliminar este producto del carrito?')) {
             carrito.splice(idx, 1);
+            console.log('🗑️ Producto eliminado');
         } else {
             carrito[idx].cantidad = cantidadAnterior;
+            console.log('↩️ Cantidad restaurada:', cantidadAnterior);
+        }
+    } else {
+        // Recalcular precio según cantidad (mayoreo)
+        const item = carrito[idx];
+        console.log('💼 Verificando mayoreo - precio_base:', item.precio_base, 'precio_mayoreo:', item.precio_mayoreo, 'cantidad_mayoreo:', item.cantidad_mayoreo);
+        
+        if (item.precio_base && item.precio_mayoreo && item.cantidad_mayoreo) {
+            if (item.cantidad >= item.cantidad_mayoreo && item.precio_mayoreo > 0) {
+                item.precio = item.precio_mayoreo;
+                console.log('✅ PRECIO MAYOREO APLICADO:', item.precio);
+            } else {
+                item.precio = item.precio_base;
+                console.log('✅ PRECIO NORMAL APLICADO:', item.precio);
+            }
         }
     }
     
-    console.log('Nueva cantidad:', carrito[idx]?.cantidad || 'eliminado'); // Debug
-    
+    console.log('💾 Guardando carrito en localStorage...');
     localStorage.setItem('carrito', JSON.stringify(carrito));
+    
+    console.log('🔄 Llamando a mostrarCarrito()...');
     mostrarCarrito();
     
     // Actualizar contador del header si existe
@@ -642,8 +665,88 @@ function getProductEmoji(nombre) {
     return '🛒';
 }
 
+// Función para calcular el precio aplicable según la cantidad
+function calcularPrecioAplicable(producto) {
+    const cantidad = producto.cantidad;
+    // Usar precio_base si existe, sino precio_original, sino precio
+    const precioNormal = producto.precio_base || producto.precio_original || producto.precio;
+    const precioMayoreo = producto.precio_mayoreo || 0;
+    const cantidadMayoreo = producto.cantidad_mayoreo || 0;
+    
+    // Verificar si aplica precio de mayoreo
+    if (precioMayoreo > 0 && cantidadMayoreo > 0 && cantidad >= cantidadMayoreo) {
+        return {
+            precio: precioMayoreo,
+            tipo: 'mayoreo',
+            ahorro: precioNormal - precioMayoreo,
+            desde: cantidadMayoreo
+        };
+    } else {
+        // Usar el precio que ya tiene el producto (puede ser precio_venta2 si tiene descuento)
+        const precioActual = producto.precio;
+        return {
+            precio: precioActual,
+            tipo: precioActual < precioNormal ? 'oferta' : 'normal',
+            ahorro: precioActual < precioNormal ? precioNormal - precioActual : 0,
+            desde: 1
+        };
+    }
+}
+
 function mostrarCarrito() {
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    
+    // Migrar productos existentes para incluir información de mayoreo si no la tienen
+    carrito = carrito.map(producto => {
+        if (!producto.hasOwnProperty('precio_mayoreo') || producto.precio_mayoreo === undefined) {
+            // Base de datos de respaldo para productos conocidos con mayoreo
+            const productosConocidos = {
+                '7501048100248': { // ACEITE CRISTAL 1.5L
+                    precio_mayoreo: 58,
+                    cantidad_mayoreo: 3,
+                    precio_oferta: 60,
+                    cantidad_oferta: 1
+                },
+                '7501048100200': { // ACEITE CRISTAL 500ML
+                    precio_mayoreo: 21,
+                    cantidad_mayoreo: 3,
+                    precio_oferta: 0,
+                    cantidad_oferta: 0
+                }
+            };
+            
+            // Verificar si es un producto conocido
+            if (productosConocidos[producto.cbarras]) {
+                console.log(`🎯 Aplicando datos conocidos para ${producto.nombre}`);
+                const datos = productosConocidos[producto.cbarras];
+                producto.precio_mayoreo = datos.precio_mayoreo;
+                producto.cantidad_mayoreo = datos.cantidad_mayoreo;
+                producto.precio_oferta = datos.precio_oferta;
+                producto.cantidad_oferta = datos.cantidad_oferta;
+            } else {
+                // Intentar obtener la información desde el DOM si está disponible
+                const control = document.getElementById(`control-${producto.cbarras}`);
+                if (control) {
+                    producto.precio_mayoreo = parseFloat(control.getAttribute('data-precio-mayoreo')) || 0;
+                    producto.cantidad_mayoreo = parseInt(control.getAttribute('data-cantidad-mayoreo')) || 0;
+                    producto.precio_oferta = parseFloat(control.getAttribute('data-precio-oferta')) || 0;
+                    producto.cantidad_oferta = parseInt(control.getAttribute('data-cantidad-oferta')) || 0;
+                    console.log(`🔧 Migración: Datos de mayoreo obtenidos del DOM para ${producto.nombre}`);
+                } else {
+                    // Valores por defecto si no se encuentra el control
+                    producto.precio_mayoreo = 0;
+                    producto.cantidad_mayoreo = 0;
+                    producto.precio_oferta = 0;
+                    producto.cantidad_oferta = 0;
+                    console.log(`⚠️ Migración: No se encontraron datos de mayoreo para ${producto.nombre}`);
+                }
+            }
+        }
+        return producto;
+    });
+    
+    // Guardar el carrito migrado
+    localStorage.setItem('carrito', JSON.stringify(carrito));
     let wrapper = document.getElementById('cart-wrapper');
     
     if (carrito.length === 0) {
@@ -664,9 +767,12 @@ function mostrarCarrito() {
     let itemsHtml = '';
     
     carrito.forEach((p, idx) => {
-        let subtotal = p.precio * p.cantidad;
-        let ahorroItem = (p.precio_original && p.precio_original > p.precio) ? (p.precio_original - p.precio) * p.cantidad : 0;
-        let puntosItem = p.puntos ? p.puntos * p.cantidad : 0;
+        // Calcular precio aplicable según cantidad
+        const precioInfo = calcularPrecioAplicable(p);
+        const precioUnitario = precioInfo.precio;
+        const subtotal = precioUnitario * p.cantidad;
+        const ahorroItem = precioInfo.ahorro * p.cantidad;
+        const puntosItem = p.puntos ? p.puntos * p.cantidad : 0;
         
         total += subtotal;
         ahorro += ahorroItem;
@@ -674,13 +780,25 @@ function mostrarCarrito() {
         
         const imagenHtml = createProductImage(p);
         
+        // Mostrar información del descuento aplicado
+        let descuentoInfo = '';
+        if (precioInfo.tipo === 'mayoreo') {
+            descuentoInfo = `<div class="item-savings" style="color: #0277bd;">🏪 Precio mayoreo (${precioInfo.desde}+ pzs): $${precioUnitario.toFixed(2)} c/u</div>`;
+        } else if (precioInfo.tipo === 'oferta') {
+            descuentoInfo = `<div class="item-savings" style="color: #f57c00;">🎯 Oferta (${precioInfo.desde}+ pzs): $${precioUnitario.toFixed(2)} c/u</div>`;
+        }
+        
+        if (ahorroItem > 0) {
+            descuentoInfo += `<div class="item-savings">💸 Ahorras $${ahorroItem.toFixed(2)} total</div>`;
+        }
+        
         itemsHtml += `
             <div class="cart-item">
                 <div class="item-image">${imagenHtml}</div>
                 <div class="item-info">
                     <div class="item-name">${p.nombre}</div>
-                    <div class="item-unit-price">$${p.precio.toFixed(2)} c/u</div>
-                    ${ahorroItem > 0 ? `<div class="item-savings">💸 Ahorras $${ahorroItem.toFixed(2)}</div>` : ''}
+                    <div class="item-unit-price">$${precioUnitario.toFixed(2)} c/u</div>
+                    ${descuentoInfo}
                 </div>
                 <div class="quantity-controls">
                     <button class="quantity-btn" onclick="modificarCantidad(${idx}, -1)">−</button>
@@ -742,49 +860,7 @@ function mostrarCarrito() {
     `;
 }
 
-function modificarCantidad(idx, cambio) {
-    console.log('Modificando cantidad:', idx, cambio); // Debug
-    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
-    if (!carrito[idx]) {
-        console.error('Producto no encontrado en índice:', idx);
-        return;
-    }
-    
-    const cantidadAnterior = carrito[idx].cantidad;
-    carrito[idx].cantidad += cambio;
-    
-    // Validar que la cantidad no sea menor a 1
-    if (carrito[idx].cantidad <= 0) {
-        if (confirm('¿Estás seguro de que quieres eliminar este producto del carrito?')) {
-            carrito.splice(idx, 1);
-        } else {
-            carrito[idx].cantidad = cantidadAnterior;
-        }
-    }
-    
-    console.log('Nueva cantidad:', carrito[idx]?.cantidad || 'eliminado'); // Debug
-    
-    localStorage.setItem('carrito', JSON.stringify(carrito));
-    mostrarCarrito();
-    
-    // Actualizar contador del header si existe
-    if (typeof actualizarBotonCarrito === 'function') {
-        actualizarBotonCarrito();
-    }
-    
-    // Feedback visual mejorado
-    const cartItems = document.querySelectorAll('.cart-item');
-    cartItems.forEach((item, index) => {
-        if (index === idx || carrito.length <= idx) {
-            item.style.transform = 'scale(0.98)';
-            item.style.background = '#e8f5e9';
-            setTimeout(() => {
-                item.style.transform = 'scale(1)';
-                item.style.background = '';
-            }, 200);
-        }
-    });
-}
+// NOTA: modificarCantidad ya está definida más arriba como window.modificarCantidad
 
 function eliminarItem(idx) {
     console.log('Eliminando item:', idx); // Debug
@@ -825,20 +901,93 @@ function enviarPedido() {
     window.location.href = '/checkout';
 }
 
+// 🛠️ FUNCIÓN DE DEBUG PARA MAYOREO - AGREGAR TEMPORALMENTE
+function debugCarritoMayoreo() {
+    console.log("🔍 === DEBUG CARRITO MAYOREO ===");
+    const carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+    
+    if (carrito.length === 0) {
+        console.log("❌ Carrito vacío");
+        return;
+    }
+    
+    carrito.forEach((producto, index) => {
+        console.log(`\n📦 Producto ${index + 1}:`, producto.nombre);
+        console.log(`   Código: ${producto.cbarras}`);
+        console.log(`   Cantidad actual: ${producto.cantidad}`);
+        console.log(`   Precio normal: $${producto.precio_original || producto.precio}`);
+        console.log(`   Precio mayoreo: $${producto.precio_mayoreo || 'No definido'}`);
+        console.log(`   Cantidad mín mayoreo: ${producto.cantidad_mayoreo || 'No definido'}`);
+        
+        const precioInfo = calcularPrecioAplicable(producto);
+        console.log(`\n🧮 Cálculo de precio:`);
+        console.log(`   Tipo aplicado: ${precioInfo.tipo}`);
+        console.log(`   Precio unitario: $${precioInfo.precio}`);
+        console.log(`   Ahorro por pieza: $${precioInfo.ahorro}`);
+        console.log(`   Total: $${(precioInfo.precio * producto.cantidad).toFixed(2)}`);
+        
+        if (precioInfo.tipo === 'mayoreo') {
+            console.log(`   ✅ APLICANDO MAYOREO - Desde ${precioInfo.desde} piezas`);
+        } else if (producto.precio_mayoreo > 0 && producto.cantidad_mayoreo > 0) {
+            console.log(`   ⚠️ MAYOREO DISPONIBLE pero no aplicado - Necesitas ${producto.cantidad_mayoreo} piezas, tienes ${producto.cantidad}`);
+        }
+        console.log(`   ==========================================`);
+    });
+}
+
+// Hacer la función disponible globalmente para usar en consola
+window.debugCarritoMayoreo = debugCarritoMayoreo;
+
 // Cargar carrito al iniciar la página
 document.addEventListener('DOMContentLoaded', function() {
     mostrarCarrito();
     
+    // ✅ Delegación de eventos para botones + y - (MEJORADA)
+    document.addEventListener('click', function(e) {
+        // Buscar si el click fue en un botón o dentro de uno
+        const btn = e.target.closest('.quantity-btn');
+        if (btn) {
+            e.preventDefault(); // Prevenir cualquier acción por defecto
+            e.stopPropagation(); // Detener propagación
+            
+            const onclickAttr = btn.getAttribute('onclick');
+            if (onclickAttr) {
+                // Extraer idx y cambio del onclick
+                const match = onclickAttr.match(/modificarCantidad\((\d+),\s*(-?\d+)\)/);
+                if (match) {
+                    const idx = parseInt(match[1]);
+                    const cambio = parseInt(match[2]);
+                    console.log('🔘 Botón clickeado - Llamando a modificarCantidad:', idx, cambio);
+                    
+                    // Llamar directamente a la función
+                    if (typeof window.modificarCantidad === 'function') {
+                        window.modificarCantidad(idx, cambio);
+                    } else {
+                        console.error('❌ window.modificarCantidad no está definida');
+                    }
+                }
+            }
+        }
+    });
+    
+    // Ejecutar debug automáticamente al cargar
+    console.log("🚀 Página de carrito cargada - ejecutando debug automático:");
+    setTimeout(() => {
+        debugCarritoMayoreo();
+    }, 500);
+    
     // Agregar animación de entrada
     const container = document.querySelector('.cart-container');
-    container.style.opacity = '0';
-    container.style.transform = 'translateY(20px)';
-    
-    setTimeout(() => {
-        container.style.transition = 'all 0.6s ease';
-        container.style.opacity = '1';
-        container.style.transform = 'translateY(0)';
-    }, 100);
+    if (container) {
+        container.style.opacity = '0';
+        container.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            container.style.transition = 'all 0.6s ease';
+            container.style.opacity = '1';
+            container.style.transform = 'translateY(0)';
+        }, 100);
+    }
 });
 </script>
 {% endblock %}
