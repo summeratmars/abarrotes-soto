@@ -206,6 +206,212 @@
       transition: transform 0.2s ease;
     }
 
+    /* Estilos de Paginación */
+    .paginacion-container {
+      margin: 40px auto;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .paginacion {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+    }
+
+    .pagina-btn,
+    .pagina-numero {
+      display: inline-block;
+      padding: 10px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      border: 2px solid #b30000;
+      background-color: white;
+      color: #b30000;
+      min-width: 44px;
+      text-align: center;
+    }
+
+    .pagina-numero {
+      padding: 8px 14px;
+      font-size: 16px;
+    }
+
+    .pagina-btn:hover,
+    .pagina-numero:hover {
+      background-color: #b30000;
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(179, 0, 0, 0.3);
+    }
+
+    .pagina-numero.activa {
+      background-color: #b30000;
+      color: white;
+      border-color: #b30000;
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(179, 0, 0, 0.4);
+    }
+
+    .pagina-btn.deshabilitado {
+      background-color: #e0e0e0;
+      color: #999;
+      border-color: #e0e0e0;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .pagina-puntos {
+      padding: 8px 4px;
+      color: #666;
+      font-weight: bold;
+    }
+
+    .info-paginacion {
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
+    @media (max-width: 480px) {
+      .paginacion {
+        gap: 4px;
+      }
+      
+      .pagina-btn,
+      .pagina-numero {
+        padding: 8px 12px;
+        font-size: 14px;
+        min-width: 38px;
+      }
+
+      .pagina-numero {
+        padding: 6px 10px;
+        font-size: 14px;
+      }
+
+      .info-paginacion {
+        font-size: 12px;
+      }
+    }
+
+    /* Estilos de Departamentos y Categorías */
+    .botones-departamentos,
+    .botones-categorias {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-departamento,
+    .btn-categoria {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-departamento {
+      background: white;
+      color: #2e7d32;
+      border-color: #a5d6a7;
+    }
+
+    .btn-categoria {
+      background: white;
+      color: #e65100;
+      border-color: #ffb74d;
+    }
+
+    .btn-departamento:hover {
+      background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(46, 125, 50, 0.3);
+      border-color: #43a047;
+    }
+
+    .btn-categoria:hover {
+      background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+      color: white;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(230, 81, 0, 0.3);
+      border-color: #f57c00;
+    }
+
+    .btn-departamento.activo {
+      background: linear-gradient(135deg, #43a047 0%, #2e7d32 100%);
+      color: white;
+      border-color: #2e7d32;
+      box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+      font-weight: 700;
+    }
+
+    .btn-categoria.activo {
+      background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+      color: white;
+      border-color: #e65100;
+      box-shadow: 0 6px 20px rgba(230, 81, 0, 0.4);
+      font-weight: 700;
+    }
+
+    .btn-departamento .emoji,
+    .btn-categoria .emoji {
+      font-size: 20px;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-departamento:hover .emoji,
+    .btn-categoria:hover .emoji {
+      transform: scale(1.2) rotate(10deg);
+    }
+
+    .btn-departamento.activo .emoji,
+    .btn-categoria.activo .emoji {
+      animation: bounce 0.6s ease;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+    }
+
+    .btn-departamento .texto,
+    .btn-categoria .texto {
+      white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+      .btn-departamento,
+      .btn-categoria {
+        font-size: 14px;
+        padding: 10px 16px;
+        gap: 6px;
+      }
+
+      .btn-departamento .emoji,
+      .btn-categoria .emoji {
+        font-size: 18px;
+      }
+    }
+
 
 
 </style>
@@ -629,23 +835,55 @@
 </div>
 {% endif %}
 
-  <div style="background-color: #e8f5e9; padding: 15px 10px; margin-bottom: 20px; border-radius: 12px;">
-    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2e7d32;">Departamentos</div>
-    <div class="botones">
-        <a href="/" class="{{ 'activo' if not departamento }}">Todos</a>
+  <div style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); padding: 20px; margin-bottom: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(46, 125, 50, 0.1);">
+    <div style="font-weight: bold; font-size: 22px; margin-bottom: 15px; color: #1b5e20; display: flex; align-items: center; gap: 8px;">
+        🏪 Departamentos
+    </div>
+    <div class="botones-departamentos">
+        <a href="/" class="btn-departamento {{ 'activo' if not departamento }}">
+            <span class="emoji">🛒</span>
+            <span class="texto">Todos</span>
+        </a>
         {% for dep in departamentos %}
-            <a href="/?departamento={{ dep }}" class="{{ 'activo' if dep == departamento }}">{{ dep }}</a>
+            {% set emoji_dep = {
+                'ABARROTES Y DESPENSA': '🥫',
+                'BEBIDAS': '🥤',
+                'BEBÉ Y MAMÁ': '👶',
+                'BOTANAS Y DULCES': '🍿',
+                'CARNICERÍA Y EMBUTIDOS': '🥩',
+                'CUIDADO PERSONAL': '🧴',
+                'HOGAR Y COCINA': '🏠',
+                'LIMPIEZA DEL HOGAR': '🧹',
+                'LÁCTEOS Y REFRIGERADOS': '🥛',
+                'MASCOTAS': '🐾',
+                'PANADERÍA Y REPOSTERÍA': '🥖',
+                'SALUD Y BIENESTAR': '💊',
+                'TABACO': '🚬',
+                'VINOS Y LICORES': '🍷'
+            }.get(dep.upper(), '📦') %}
+            <a href="/?departamento={{ dep }}" class="btn-departamento {{ 'activo' if dep == departamento }}">
+                <span class="emoji">{{ emoji_dep }}</span>
+                <span class="texto">{{ dep }}</span>
+            </a>
         {% endfor %}
     </div>
   </div>
 
   {% if categorias %}
-  <div style="background-color: #fff3e0; padding: 15px 10px; margin-bottom: 25px; border-radius: 12px;">
-      <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #e65100;">Categorías</div>
-      <div class="botones">
-          <a href="/?departamento={{ departamento }}" class="{{ 'activo' if not categoria }}">Todas</a>
+  <div style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); padding: 20px; margin-bottom: 25px; border-radius: 16px; box-shadow: 0 4px 15px rgba(230, 81, 0, 0.1);">
+      <div style="font-weight: bold; font-size: 22px; margin-bottom: 15px; color: #bf360c; display: flex; align-items: center; gap: 8px;">
+          📑 Categorías
+      </div>
+      <div class="botones-categorias">
+          <a href="/?departamento={{ departamento }}" class="btn-categoria {{ 'activo' if not categoria }}">
+              <span class="emoji">📋</span>
+              <span class="texto">Todas</span>
+          </a>
           {% for cat in categorias %}
-              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="{{ 'activo' if cat == categoria }}">{{ cat }}</a>
+              <a href="/?departamento={{ departamento }}&categoria={{ cat }}" class="btn-categoria {{ 'activo' if cat == categoria }}">
+                  <span class="emoji">🔖</span>
+                  <span class="texto">{{ cat }}</span>
+              </a>
           {% endfor %}
       </div>
   </div>
@@ -725,6 +963,61 @@
     </div>
   {% endfor %}
   </div>
+
+  <!-- Paginación -->
+  {% if total_paginas > 1 %}
+  <div class="paginacion-container">
+    <div class="paginacion">
+      <!-- Botón Anterior -->
+      {% if pagina_actual > 1 %}
+        <a href="?{% if departamento %}departamento={{ departamento }}&{% endif %}{% if categoria %}categoria={{ categoria }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ pagina_actual - 1 }}" class="pagina-btn">
+          ← Anterior
+        </a>
+      {% else %}
+        <span class="pagina-btn deshabilitado">← Anterior</span>
+      {% endif %}
+
+      <!-- Números de página -->
+      {% set inicio_pag = [1, pagina_actual - 2]|max %}
+      {% set fin_pag = [total_paginas, pagina_actual + 2]|min %}
+
+      {% if inicio_pag > 1 %}
+        <a href="?{% if departamento %}departamento={{ departamento }}&{% endif %}{% if categoria %}categoria={{ categoria }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina=1" class="pagina-numero">1</a>
+        {% if inicio_pag > 2 %}
+          <span class="pagina-puntos">...</span>
+        {% endif %}
+      {% endif %}
+
+      {% for num in range(inicio_pag, fin_pag + 1) %}
+        {% if num == pagina_actual %}
+          <span class="pagina-numero activa">{{ num }}</span>
+        {% else %}
+          <a href="?{% if departamento %}departamento={{ departamento }}&{% endif %}{% if categoria %}categoria={{ categoria }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ num }}" class="pagina-numero">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if fin_pag < total_paginas %}
+        {% if fin_pag < total_paginas - 1 %}
+          <span class="pagina-puntos">...</span>
+        {% endif %}
+        <a href="?{% if departamento %}departamento={{ departamento }}&{% endif %}{% if categoria %}categoria={{ categoria }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ total_paginas }}" class="pagina-numero">{{ total_paginas }}</a>
+      {% endif %}
+
+      <!-- Botón Siguiente -->
+      {% if pagina_actual < total_paginas %}
+        <a href="?{% if departamento %}departamento={{ departamento }}&{% endif %}{% if categoria %}categoria={{ categoria }}&{% endif %}{% if query_actual %}q={{ query_actual }}&{% endif %}{% if orden_actual %}orden={{ orden_actual }}&{% endif %}pagina={{ pagina_actual + 1 }}" class="pagina-btn">
+          Siguiente →
+        </a>
+      {% else %}
+        <span class="pagina-btn deshabilitado">Siguiente →</span>
+      {% endif %}
+    </div>
+    
+    <div class="info-paginacion">
+      Mostrando página {{ pagina_actual }} de {{ total_paginas }} ({{ total_productos }} productos en total)
+    </div>
+  </div>
+  {% endif %}
 
 {% endif %}
 
