@@ -8,7 +8,7 @@ from functools import wraps
 from dotenv import load_dotenv
 import smtplib
 import pandas as pd
-from db_utils import get_db_connection, obtener_productos_sucursal, guardar_pedido_db, contar_productos_sucursal, contar_productos_sucursal
+from db_config import get_db_connection, obtener_productos_sucursal, guardar_pedido_db, contar_productos_sucursal, contar_productos_sucursal
 from routes_imagenes import imagenes_bp
 import json
 import os
@@ -220,7 +220,7 @@ def checkout():
             session["ahorro"] = ahorro
 
             # Guardar pedido como cotización en la base de datos
-            from db_utils import guardar_cotizacion_web
+            from db_config import guardar_cotizacion_web
             folio, uuid_cotizacion = guardar_cotizacion_web(carrito)
             session["folio"] = folio
             session["uuid_cotizacion"] = uuid_cotizacion
@@ -240,7 +240,7 @@ def monedero():
     if request.method == "POST":
         nombre = request.form.get("nombre", "").strip()
         telefono = request.form.get("telefono", "").strip()
-        from db_utils import registrar_cliente_monedero
+        from db_config import registrar_cliente_monedero
         resultado, error = registrar_cliente_monedero(nombre, telefono)
         if error:
             mensaje = f"❌ {error}"
@@ -915,7 +915,7 @@ def consultar_puntos():
             error = "Debes ingresar un teléfono o número de cliente."
         else:
             try:
-                from db_utils import get_db_connection
+                from db_config import get_db_connection
                 conn = get_db_connection()
                 cursor = conn.cursor(dictionary=True)
                 # Buscar por idcliente o teléfono

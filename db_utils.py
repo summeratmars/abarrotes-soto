@@ -4,10 +4,14 @@ from datetime import datetime, timedelta
 import mysql.connector
 from mysql.connector import Error
 import re
+import os
+from dotenv import load_dotenv
 from notificador_imagenes import verificar_imagen_producto
 
+# Cargar variables de entorno
+load_dotenv()
+
 def get_db_connection():
-    import os
     return mysql.connector.connect(
         host=os.environ.get('DB_HOST'),
         user=os.environ.get('DB_USER'),

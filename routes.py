@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template, jsonify, redirect, url_for, flash, session
 import json
 import re
-from db_utils import obtener_productos_sucursal, guardar_cotizacion_web, registrar_cliente_monedero, obtener_cliente_por_telefono, contar_productos_sucursal
+from db_config import obtener_productos_sucursal, guardar_cotizacion_web, registrar_cliente_monedero, contar_productos_sucursal
 
 main_routes = Blueprint('main_routes', __name__)
 
