@@ -453,3 +453,32 @@ def obtener_categorias(departamento=None):
     except Exception as e:
         print(f"Error obteniendo categorías: {e}")
         return []
+
+
+def consultar_puntos_cliente(busqueda):
+    """
+    Consulta los puntos de un cliente por teléfono, código o ID.
+    Retorna (dict_cliente, None) si encuentra el cliente, o (None, mensaje_error) si no.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        query = """
+            SELECT nombre, apellidos, puntos 
+            FROM cliente 
+            WHERE is_active=1 AND (idcliente = %s OR telefono = %s OR vCodigoCliente = %s) 
+            LIMIT 1
+        """
+        cursor.execute(query, (busqueda, busqueda, busqueda))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if row:
+            return row, None
+        else:
+            return None, "Cliente no encontrado."
+    except Exception as e:
+        return None, f"Error al consultar: {e}"
+

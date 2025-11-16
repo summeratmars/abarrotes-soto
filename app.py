@@ -919,25 +919,18 @@ def consultar_puntos():
             error = "Debes ingresar un teléfono o número de cliente."
         else:
             try:
-                from db_config import get_db_connection
-                conn = get_db_connection()
-                cursor = conn.cursor(dictionary=True)
-                # Buscar por idcliente o teléfono
-                query = ("SELECT nombre, apellidos, puntos FROM cliente WHERE is_active=1 AND (idcliente = %s OR telefono = %s OR vCodigoCliente = %s) LIMIT 1")
-                cursor.execute(query, (busqueda, busqueda, busqueda))
-                row = cursor.fetchone()
+                from db_config import consultar_puntos_cliente
+                row, error = consultar_puntos_cliente(busqueda)
+                
                 if row:
-                    # row puede ser un dict o una tupla dependiendo del cursor
-                    if isinstance(row, dict):
-                        nombre = row.get('nombre', '')
-                        apellidos = row.get('apellidos', '')
-                        puntos_val = row.get('puntos')
-                    else:
-                        nombre = row[0] if len(row) > 0 else ''
-                        apellidos = row[1] if len(row) > 1 else ''
-                        puntos_val = row[2] if len(row) > 2 else None
+                    # row es un dict
+                    nombre = row.get('nombre', '')
+                    apellidos = row.get('apellidos', '')
+                    puntos_val = row.get('puntos')
+                    
                     # Nombre completo
                     nombre_completo = f"{nombre} {apellidos}".strip()
+                    
                     # Máscara tipo M***** S*** J*****
                     def mascarar_parte(parte):
                         parte = parte.strip()
@@ -951,6 +944,7 @@ def consultar_puntos():
                             else:
                                 resultado.append(p[0].upper() + '*' * (len(p)-1))
                         return ' '.join(resultado)
+                    
                     nombre_mascara = ''
                     if nombre:
                         nombre_mascara += mascarar_parte(nombre)
@@ -958,11 +952,13 @@ def consultar_puntos():
                         if nombre_mascara:
                             nombre_mascara += ' '
                         nombre_mascara += mascarar_parte(apellidos)
-                    # Obtener iniciales (por compatibilidad, pero ya no se usa en la vista)
+                    
+                    # Obtener iniciales
                     iniciales = ''
                     for parte in (nombre, apellidos):
                         if parte and isinstance(parte, str) and parte.strip():
                             iniciales += parte.strip()[0].upper()
+                    
                     if puntos_val is not None:
                         if isinstance(puntos_val, (int, float)):
                             puntos = puntos_val
@@ -978,12 +974,6 @@ def consultar_puntos():
                         else:
                             puntos = puntos_val
                             pesos = None
-                    else:
-                        error = "Cliente no encontrado."
-                else:
-                    error = "Cliente no encontrado."
-                cursor.close()
-                conn.close()
             except Exception as e:
                 error = f"Error al consultar: {e}"
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'

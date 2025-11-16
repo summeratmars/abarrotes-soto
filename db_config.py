@@ -57,12 +57,15 @@ registrar_cliente_monedero = db.registrar_cliente_monedero
 try:
     obtener_departamentos = db.obtener_departamentos
     obtener_categorias = db.obtener_categorias
+    consultar_puntos_cliente = db.consultar_puntos_cliente
 except AttributeError:
     # Si no existen en el módulo, crear funciones fallback
     def obtener_departamentos():
         return []
     def obtener_categorias(departamento=None):
         return []
+    def consultar_puntos_cliente(busqueda):
+        return None, "Función no disponible"
 
 __all__ = [
     'get_db_connection',
@@ -73,5 +76,6 @@ __all__ = [
     'registrar_cliente_monedero',
     'obtener_departamentos',
     'obtener_categorias',
+    'consultar_puntos_cliente',
     'usar_api_rest'
 ]
