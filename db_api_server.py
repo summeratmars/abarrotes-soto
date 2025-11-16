@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import mysql.connector
-from mysql.connector import Error
+from mysql.connector import Error, pooling
 import os
 import json
 import uuid
@@ -18,6 +18,18 @@ from dotenv import load_dotenv
 
 # Cargar variables de entorno
 load_dotenv()
+
+# Pool de conexiones para mejorar rendimiento
+connection_pool = pooling.MySQLConnectionPool(
+    pool_name="abarrotes_pool",
+    pool_size=10,
+    pool_reset_session=True,
+    host=os.environ.get('DB_HOST'),
+    user=os.environ.get('DB_USER'),
+    password=os.environ.get('DB_PASSWORD'),
+    database=os.environ.get('DB_NAME'),
+    port=int(os.environ.get('DB_PORT', '3306'))
+)
 
 app = FastAPI(
     title="Abarrotes Soto DB API",
@@ -62,16 +74,10 @@ class PedidoRequest(BaseModel):
     pago: str
     carrito: List[ProductoCarrito]
 
-# Función auxiliar para conectar a la base de datos
+# Función auxiliar para conectar a la base de datos usando el pool
 def get_db_connection():
     try:
-        return mysql.connector.connect(
-            host=os.environ.get('DB_HOST'),
-            user=os.environ.get('DB_USER'),
-            password=os.environ.get('DB_PASSWORD'),
-            database=os.environ.get('DB_NAME'),
-            port=int(os.environ.get('DB_PORT', '3306'))
-        )
+        return connection_pool.get_connection()
     except Error as e:
         print(f"Error al conectar a la base de datos: {e}")
         raise HTTPException(status_code=500, detail=f"Error de conexión a base de datos: {str(e)}")
