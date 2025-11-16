@@ -406,3 +406,50 @@ def contar_productos_sucursal(
     cursor.close()
     conn.close()
     return total
+
+
+def obtener_departamentos():
+    """
+    Obtiene la lista de departamentos únicos de la tabla departamento.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT nombre_dep FROM departamento ORDER BY nombre_dep")
+        departamentos = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return departamentos
+    except Exception as e:
+        print(f"Error obteniendo departamentos: {e}")
+        return []
+
+
+def obtener_categorias(departamento=None):
+    """
+    Obtiene la lista de categorías.
+    Si se proporciona departamento, filtra por ese departamento.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if departamento:
+            sql = """
+                SELECT DISTINCT c.nombre_categoria 
+                FROM categoria c
+                JOIN departamento d ON c.id_depto = d.id_depto
+                WHERE d.nombre_dep = %s
+                ORDER BY c.nombre_categoria
+            """
+            cursor.execute(sql, (departamento,))
+        else:
+            cursor.execute("SELECT DISTINCT nombre_categoria FROM categoria ORDER BY nombre_categoria")
+        
+        categorias = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return categorias
+    except Exception as e:
+        print(f"Error obteniendo categorías: {e}")
+        return []

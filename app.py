@@ -109,16 +109,20 @@ def index():
         total_paginas = (total_productos + por_pagina - 1) // por_pagina
 
     # Obtener departamentos y categorías únicos desde la base de datos
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT DISTINCT nombre_dep FROM departamento WHERE nombre_dep IS NOT NULL")
-    departamentos = sorted([str(x[0]) if isinstance(x, (list, tuple)) else str(x) for x in cursor.fetchall()])
+    from db_config import obtener_departamentos, obtener_categorias
+    try:
+        departamentos = obtener_departamentos()
+    except Exception as e:
+        print(f"❌ Error al obtener departamentos: {e}")
+        departamentos = []
+    
     categorias = []
     if departamento:
-        cursor.execute("SELECT DISTINCT nombre_categoria FROM categoria WHERE nombre_categoria IS NOT NULL AND uuid_departamento = (SELECT uuid_departamento FROM departamento WHERE nombre_dep = %s LIMIT 1)", (departamento,))
-        categorias = sorted([str(x[0]) if isinstance(x, (list, tuple)) else str(x) for x in cursor.fetchall()])
-    cursor.close()
-    conn.close()
+        try:
+            categorias = obtener_categorias(departamento)
+        except Exception as e:
+            print(f"❌ Error al obtener categorías: {e}")
+            categorias = []
 
     # Agrupar productos por departamento
     productos_por_departamento = defaultdict(list)

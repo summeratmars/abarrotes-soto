@@ -53,6 +53,17 @@ contar_productos_sucursal = db.contar_productos_sucursal
 guardar_cotizacion_web = db.guardar_cotizacion_web
 registrar_cliente_monedero = db.registrar_cliente_monedero
 
+# Agregar funciones de departamentos y categorías
+try:
+    obtener_departamentos = db.obtener_departamentos
+    obtener_categorias = db.obtener_categorias
+except AttributeError:
+    # Si no existen en el módulo, crear funciones fallback
+    def obtener_departamentos():
+        return []
+    def obtener_categorias(departamento=None):
+        return []
+
 __all__ = [
     'get_db_connection',
     'obtener_productos_sucursal',
@@ -60,5 +71,7 @@ __all__ = [
     'contar_productos_sucursal',
     'guardar_cotizacion_web',
     'registrar_cliente_monedero',
+    'obtener_departamentos',
+    'obtener_categorias',
     'usar_api_rest'
 ]
