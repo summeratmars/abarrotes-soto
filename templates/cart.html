@@ -503,8 +503,9 @@
 </div>
 <script>
 // Hacer las funciones disponibles globalmente
-window.modificarCantidad = function(idx, cambio) {
-    console.log('✅ modificarCantidad iniciada - idx:', idx, 'cambio:', cambio);
+// IMPORTANTE: Usamos nombre diferente para evitar conflicto con base.html
+window.modificarCantidadCarrito = function(idx, cambio) {
+    console.log('✅ modificarCantidadCarrito iniciada - idx:', idx, 'cambio:', cambio);
     
     let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
     console.log('📦 Carrito actual:', carrito);
@@ -801,9 +802,9 @@ function mostrarCarrito() {
                     ${descuentoInfo}
                 </div>
                 <div class="quantity-controls">
-                    <button class="quantity-btn" onclick="modificarCantidad(${idx}, -1)">−</button>
+                    <button class="quantity-btn" onclick="modificarCantidadCarrito(${idx}, -1)">−</button>
                     <div class="quantity-display">${p.cantidad}</div>
-                    <button class="quantity-btn" onclick="modificarCantidad(${idx}, 1)">+</button>
+                    <button class="quantity-btn" onclick="modificarCantidadCarrito(${idx}, 1)">+</button>
                 </div>
                 <div class="item-price">
                     <div class="item-total">$${subtotal.toFixed(2)}</div>
@@ -860,7 +861,7 @@ function mostrarCarrito() {
     `;
 }
 
-// NOTA: modificarCantidad ya está definida más arriba como window.modificarCantidad
+// NOTA: modificarCantidadCarrito está definida más arriba como window.modificarCantidadCarrito
 
 function eliminarItem(idx) {
     console.log('Eliminando item:', idx); // Debug
@@ -953,17 +954,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const onclickAttr = btn.getAttribute('onclick');
             if (onclickAttr) {
                 // Extraer idx y cambio del onclick
-                const match = onclickAttr.match(/modificarCantidad\((\d+),\s*(-?\d+)\)/);
+                const match = onclickAttr.match(/modificarCantidadCarrito\((\d+),\s*(-?\d+)\)/);
                 if (match) {
                     const idx = parseInt(match[1]);
                     const cambio = parseInt(match[2]);
-                    console.log('🔘 Botón clickeado - Llamando a modificarCantidad:', idx, cambio);
+                    console.log('🔘 Botón clickeado - Llamando a modificarCantidadCarrito:', idx, cambio);
                     
                     // Llamar directamente a la función
-                    if (typeof window.modificarCantidad === 'function') {
-                        window.modificarCantidad(idx, cambio);
+                    if (typeof window.modificarCantidadCarrito === 'function') {
+                        window.modificarCantidadCarrito(idx, cambio);
                     } else {
-                        console.error('❌ window.modificarCantidad no está definida');
+                        console.error('❌ window.modificarCantidadCarrito no está definida');
                     }
                 }
             }
