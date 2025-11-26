@@ -11,6 +11,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Importar el notificador de imágenes para verificar productos sin imagen
+try:
+    from notificador_imagenes import verificar_imagen_producto
+except ImportError:
+    verificar_imagen_producto = None
+    print("⚠️ notificador_imagenes no disponible")
+
 # URL base de la API - debe apuntar a tu PC donde corre la API
 API_BASE_URL = os.environ.get('API_BASE_URL', 'http://localhost:8001')
 
@@ -87,7 +94,18 @@ def obtener_productos_sucursal(
     
     try:
         response = _make_request('GET', '/api/productos', params=params)
-        return response.get('productos', [])
+        productos = response.get('productos', [])
+        
+        # Verificar imágenes de productos y enviar notificaciones si es necesario
+        if verificar_imagen_producto:
+            for producto in productos:
+                codigo_barras = producto.get('cbarras', '')
+                nombre_producto = producto.get('nombre_producto', '')
+                if codigo_barras:
+                    # Verificar imagen del producto (envía notificación si no tiene)
+                    verificar_imagen_producto(codigo_barras, nombre_producto)
+        
+        return productos
     except APIConnectionError as e:
         print(f"❌ Error al obtener productos: {e}")
         return []
