@@ -6,6 +6,7 @@ en lugar de conectarse directamente a MySQL.
 
 import requests
 import os
+import threading
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
 
@@ -20,6 +21,27 @@ except ImportError:
 
 # URL base de la API - debe apuntar a tu PC donde corre la API
 API_BASE_URL = os.environ.get('API_BASE_URL', 'http://localhost:8001')
+
+# Caché simple para productos (reduce llamadas a la API)
+_cache_productos = {}
+_cache_timeout = 300  # 5 minutos en segundos
+_cache_timestamps = {}
+
+def _verificar_imagenes_async(productos: List[Dict]):
+    """
+    Verifica imágenes de productos en un hilo separado para no bloquear la respuesta
+    """
+    if not verificar_imagen_producto:
+        return
+    
+    for producto in productos:
+        codigo_barras = producto.get('cbarras', '')
+        nombre_producto = producto.get('nombre_producto', '')
+        if codigo_barras:
+            try:
+                verificar_imagen_producto(codigo_barras, nombre_producto)
+            except Exception as e:
+                print(f"⚠️ Error verificando imagen de {codigo_barras}: {e}")
 
 class APIConnectionError(Exception):
     """Excepción personalizada para errores de conexión a la API"""
@@ -75,7 +97,21 @@ def obtener_productos_sucursal(
 ) -> List[Dict]:
     """
     Obtiene productos de la sucursal mediante la API REST
+    Incluye caché para mejorar rendimiento
     """
+    import time
+    
+    # Crear clave de caché basada en los parámetros
+    cache_key = f"{sucursal_uuid}_{departamento}_{categoria}_{query}_{orden}_{pagina}_{por_pagina}"
+    
+    # Verificar si hay datos en caché y si son válidos
+    current_time = time.time()
+    if cache_key in _cache_productos:
+        cached_time = _cache_timestamps.get(cache_key, 0)
+        if current_time - cached_time < _cache_timeout:
+            print(f"📦 Usando caché para productos (key: {cache_key[:30]}...)")
+            return _cache_productos[cache_key]
+    
     params = {
         'sucursal_uuid': sucursal_uuid,
         'pagina': pagina
@@ -96,14 +132,24 @@ def obtener_productos_sucursal(
         response = _make_request('GET', '/api/productos', params=params)
         productos = response.get('productos', [])
         
-        # Verificar imágenes de productos y enviar notificaciones si es necesario
-        if verificar_imagen_producto:
-            for producto in productos:
-                codigo_barras = producto.get('cbarras', '')
-                nombre_producto = producto.get('nombre_producto', '')
-                if codigo_barras:
-                    # Verificar imagen del producto (envía notificación si no tiene)
-                    verificar_imagen_producto(codigo_barras, nombre_producto)
+        # Guardar en caché
+        _cache_productos[cache_key] = productos
+        _cache_timestamps[cache_key] = current_time
+        
+        # Limpiar caché viejo (máximo 50 entradas)
+        if len(_cache_productos) > 50:
+            oldest_key = min(_cache_timestamps, key=_cache_timestamps.get)
+            del _cache_productos[oldest_key]
+            del _cache_timestamps[oldest_key]
+        
+        # Verificar imágenes de productos en segundo plano (no bloquea la respuesta)
+        if verificar_imagen_producto and productos:
+            thread = threading.Thread(
+                target=_verificar_imagenes_async, 
+                args=(productos,),
+                daemon=True
+            )
+            thread.start()
         
         return productos
     except APIConnectionError as e:

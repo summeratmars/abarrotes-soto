@@ -29,6 +29,14 @@ import os
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'cambia_esto_en_produccion')  # Usa variable de entorno
 
+# Habilitar compresión gzip para respuestas más rápidas
+try:
+    from flask_compress import Compress
+    Compress(app)
+    print("✅ Compresión gzip habilitada")
+except ImportError:
+    print("⚠️ flask-compress no instalado, sin compresión gzip")
+
 # Registrar blueprints
 app.register_blueprint(imagenes_bp)
 
@@ -36,6 +44,7 @@ app.register_blueprint(imagenes_bp)
 UPLOAD_FOLDER = os.path.join('static', 'images')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # Caché de 1 año para archivos estáticos
 
 # Asegurar que la carpeta de upload existe
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
