@@ -943,34 +943,6 @@ window.debugCarritoMayoreo = debugCarritoMayoreo;
 document.addEventListener('DOMContentLoaded', function() {
     mostrarCarrito();
     
-    // ✅ Delegación de eventos para botones + y - (MEJORADA)
-    document.addEventListener('click', function(e) {
-        // Buscar si el click fue en un botón o dentro de uno
-        const btn = e.target.closest('.quantity-btn');
-        if (btn) {
-            e.preventDefault(); // Prevenir cualquier acción por defecto
-            e.stopPropagation(); // Detener propagación
-            
-            const onclickAttr = btn.getAttribute('onclick');
-            if (onclickAttr) {
-                // Extraer idx y cambio del onclick
-                const match = onclickAttr.match(/modificarCantidadCarrito\((\d+),\s*(-?\d+)\)/);
-                if (match) {
-                    const idx = parseInt(match[1]);
-                    const cambio = parseInt(match[2]);
-                    console.log('🔘 Botón clickeado - Llamando a modificarCantidadCarrito:', idx, cambio);
-                    
-                    // Llamar directamente a la función
-                    if (typeof window.modificarCantidadCarrito === 'function') {
-                        window.modificarCantidadCarrito(idx, cambio);
-                    } else {
-                        console.error('❌ window.modificarCantidadCarrito no está definida');
-                    }
-                }
-            }
-        }
-    });
-    
     // Ejecutar debug automáticamente al cargar
     console.log("🚀 Página de carrito cargada - ejecutando debug automático:");
     setTimeout(() => {
