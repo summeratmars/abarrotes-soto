@@ -42,7 +42,7 @@ app.register_blueprint(imagenes_bp)
 
 # Configuración para subida de archivos
 UPLOAD_FOLDER = os.path.join('static', 'images')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'jfif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # Caché de 1 año para archivos estáticos
 
