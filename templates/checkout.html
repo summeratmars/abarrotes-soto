@@ -223,6 +223,11 @@
 </style>
 
 <div class="checkout-container">
+    {% if mp_error %}
+    <div style="background: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px;">
+        ⚠️ {{ mp_error }}
+    </div>
+    {% endif %}
     <form method="POST" action="/checkout" id="checkout-form" class="checkout-form">
         <div class="form-header">
             <h1>🛒 Finalizar Pedido</h1>
@@ -298,6 +303,16 @@
                 </div>
                 
                 <input type="hidden" name="horario_entrega" id="horario_entrega">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button type="button" id="btn-hoy" class="dia-selector selected" onclick="cambiarDia('hoy')" style="flex: 1; padding: 10px; border: 2px solid #2e7d32; background: #e8f5e8; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Hoy
+                    </button>
+                    <button type="button" id="btn-manana" class="dia-selector" onclick="cambiarDia('manana')" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; background: white; border-radius: 8px; cursor: pointer;">
+                        Mañana
+                    </button>
+                </div>
+
                 <div class="horario-grid" id="horario-container">
                     <!-- Los horarios se generarán dinámicamente con JavaScript -->
                 </div>
@@ -322,19 +337,19 @@
                         </div>
                     </div>
                     
-                    <div class="payment-option" data-payment="Transferencia">
-                        <div class="payment-icon">🏦</div>
-                        <div>
-                            <strong>Transferencia Bancaria</strong><br>
-                            <small style="color: #666;">SPEI o transferencia</small>
-                        </div>
-                    </div>
-                    
                     <div class="payment-option" data-payment="Tarjeta">
                         <div class="payment-icon">💳</div>
                         <div>
                             <strong>Tarjeta de Débito/Crédito</strong><br>
-                            <small style="color: #666;">Contra entrega</small>
+                            <small style="color: #666;">Contra entrega (Terminal)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="payment-option" data-payment="Mercado Pago">
+                        <div class="payment-icon">📱</div>
+                        <div>
+                            <strong>Pago en línea (Mercado Pago)</strong><br>
+                            <small style="color: #666;">Tarjetas, OXXO y más</small>
                         </div>
                     </div>
                 </div>
@@ -369,29 +384,6 @@
                     </div>
                 </div>
 
-                <!-- Detalles de Transferencia -->
-                <div class="payment-details" id="transferencia-details">
-                    <div class="payment-info">
-                        <strong>🏦 Datos para Transferencia</strong><br><br>
-                        
-                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
-                            <div style="margin-bottom: 10px;">
-                                <strong>Banco:</strong> BANAMEX<br>
-                                <strong>Titular:</strong> EFREN UZIEL SOTO JAIMES<br>
-                                <strong>Tarjeta:</strong> <span style="font-family: monospace; font-size: 1.1em; color: #2e7d32; font-weight: bold;">5204 1662 0566 9791</span><br>
-                                <small style="color: #666;">💳 Puedes transferir a esta tarjeta desde cualquier banco</small>
-                            </div>
-                            
-                            <div style="padding: 10px; background: #e3f2fd; border-radius: 6px; margin-top: 10px;">
-                                <small>
-                                    📱 <strong>Importante:</strong> Envía tu comprobante de pago por WhatsApp al 
-                                    <strong style="color: #2e7d32;">55 7525 1742</strong> para confirmar tu pedido.
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Detalles de Tarjeta -->
                 <div class="payment-details" id="tarjeta-details">
                     <div class="payment-info">
@@ -409,6 +401,22 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Detalles de Mercado Pago -->
+                <div class="payment-details" id="mercado pago-details">
+                    <div class="payment-info">
+                        <strong>📱 Pago en línea con Mercado Pago</strong><br><br>
+                        
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; border: 1px solid #90caf9;">
+                            <p style="margin-top: 0;">Serás redirigido a Mercado Pago para completar tu compra de forma segura.</p>
+                            <ul style="margin-bottom: 0; padding-left: 20px; color: #444;">
+                                <li>Paga con cualquier tarjeta de débito o crédito</li>
+                                <li>Tu dinero está protegido</li>
+                                <li>No necesitamos guardar los datos de tu tarjeta</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <input type="hidden" name="carrito_json" id="carrito_json">
@@ -421,8 +429,62 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // --- RECORDAR DATOS DEL CLIENTE ---
+    // Recuperar datos de localStorage para autocompletar el formulario
+    const camposUsuario = ['nombre', 'telefono', 'numero_cliente', 'direccion', 'colonia'];
+    
+    camposUsuario.forEach(campo => {
+        const input = document.getElementById(campo);
+        if (input) {
+            // 1. Cargar valor guardado
+            const valorGuardado = localStorage.getItem('usuario_' + campo);
+            if (valorGuardado) {
+                input.value = valorGuardado;
+            }
+            
+            // 2. Guardar automáticamente al escribir o cambiar
+            input.addEventListener('input', function() {
+                localStorage.setItem('usuario_' + campo, this.value);
+            });
+            input.addEventListener('change', function() {
+                localStorage.setItem('usuario_' + campo, this.value);
+            });
+        }
+    });
+    // ------------------------------------
+
     // Generar horarios dinámicos basados en la hora actual de México City
-    function generarHorariosDisponibles() {
+    window.cambiarDia = function(dia) {
+        // Actualizar botones visualmente
+        const btnHoy = document.getElementById('btn-hoy');
+        const btnManana = document.getElementById('btn-manana');
+        
+        if (dia === 'hoy') {
+            btnHoy.className = 'dia-selector selected';
+            btnHoy.style.border = '2px solid #2e7d32';
+            btnHoy.style.backgroundColor = '#e8f5e8';
+            
+            btnManana.className = 'dia-selector';
+            btnManana.style.border = '2px solid #e0e0e0';
+            btnManana.style.backgroundColor = 'white';
+        } else {
+            btnManana.className = 'dia-selector selected';
+            btnManana.style.border = '2px solid #2e7d32';
+            btnManana.style.backgroundColor = '#e8f5e8';
+            
+            btnHoy.className = 'dia-selector';
+            btnHoy.style.border = '2px solid #e0e0e0';
+            btnHoy.style.backgroundColor = 'white';
+        }
+        
+        generarHorariosDisponibles(dia);
+        
+        // Limpiar selección previa
+        document.getElementById('horario_entrega').value = '';
+    }
+
+    function generarHorariosDisponibles(dia = 'hoy') {
         const container = document.getElementById('horario-container');
         
         // Obtener hora actual de México City
@@ -434,8 +496,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Limpiar container
         container.innerHTML = '';
         
-        // Agregar opción "Lo antes posible" si está en horario de servicio
-        if (horaActual >= 8 && horaActual < 22) {
+        // Si es hoy, mostramos "Lo antes posible" si estamos en horario
+        if (dia === 'hoy' && horaActual >= 8 && horaActual < 22) {
             const tiempoEstimado = "10-40 min";
             
             const optionPronto = document.createElement('div');
@@ -453,14 +515,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const horaInicio = hora;
             const horaFin = hora + 1;
             
-            // Solo mostrar horarios futuros (con 15 minutos de margen)
-            if (horaInicio > horaActual || (horaInicio === horaActual && minutoActual < 45)) {
+            // Si es hoy: filtrar horas pasadas
+            // Si es mañana: mostrar todas las horas
+            if (dia === 'manana' || (dia === 'hoy' && (horaInicio > horaActual || (horaInicio === horaActual && minutoActual < 45)))) {
                 const formatoInicio = formatearHora(horaInicio);
                 const formatoFin = formatearHora(horaFin);
                 
+                // Prefijo para guardar en el backend
+                const prefijoDia = dia === 'manana' ? 'Mañana - ' : '';
+                
                 const option = document.createElement('div');
                 option.className = 'horario-option';
-                option.setAttribute('data-horario', `${formatoInicio} - ${formatoFin}`);
+                option.setAttribute('data-horario', `${prefijoDia}${formatoInicio} - ${formatoFin}`);
                 
                 // Agregar iconos según la hora
                 let icono = '🕐';
@@ -477,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Si no hay horarios disponibles hoy, mostrar mensaje
+        // Si no hay horarios disponibles
         if (container.children.length === 0) {
             const noDisponible = document.createElement('div');
             noDisponible.className = 'horario-option';
@@ -596,6 +662,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
+
+        // Guardar método de pago y horario para recuperación
+        localStorage.setItem('metodo_pago', metodoPago);
+        localStorage.setItem('horario_entrega', document.getElementById('horario_entrega').value || '');
+        localStorage.setItem('pago_efectivo_cambio', document.getElementById('pago_efectivo_cambio').value || '');
+        localStorage.setItem('pago_efectivo_monto', document.getElementById('pago_efectivo_monto').value || '');
 
         // Guardar carrito en campo oculto
         document.getElementById('carrito_json').value = localStorage.getItem('carrito') || '[]';

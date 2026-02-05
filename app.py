@@ -16,12 +16,66 @@ import csv
 import shutil
 import secrets
 import pytz
+import requests
 
 # Cargar variables de entorno desde .env
 load_dotenv()
 
 # Zona horaria de México
 mexico_timezone = pytz.timezone('America/Mexico_City')
+
+# Archivo local para recuperar pedidos cuando se pierde la sesión (Mercado Pago)
+ORDERS_CACHE_FILE = "pedidos_cache.json"
+
+
+def _load_orders_cache():
+    if not os.path.exists(ORDERS_CACHE_FILE):
+        return {"orders": {}, "mp_preference_map": {}}
+    try:
+        with open(ORDERS_CACHE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if "orders" not in data:
+            data["orders"] = {}
+        if "mp_preference_map" not in data:
+            data["mp_preference_map"] = {}
+        return data
+    except Exception as e:
+        print(f"❌ Error al leer cache de pedidos: {e}")
+        return {"orders": {}, "mp_preference_map": {}}
+
+
+def _save_orders_cache(data):
+    try:
+        with open(ORDERS_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"❌ Error al guardar cache de pedidos: {e}")
+
+
+def _store_order_snapshot(folio, snapshot):
+    if not folio:
+        return
+    data = _load_orders_cache()
+    data["orders"][str(folio)] = snapshot
+    _save_orders_cache(data)
+
+
+def _map_preference_to_folio(preference_id, folio):
+    if not preference_id or not folio:
+        return
+    data = _load_orders_cache()
+    data["mp_preference_map"][str(preference_id)] = str(folio)
+    _save_orders_cache(data)
+
+
+def _get_order_snapshot_by_folio(folio):
+    data = _load_orders_cache()
+    return data.get("orders", {}).get(str(folio))
+
+
+def _get_folio_by_preference_id(preference_id):
+    data = _load_orders_cache()
+    return data.get("mp_preference_map", {}).get(str(preference_id))
 
 
 
@@ -42,7 +96,7 @@ app.register_blueprint(imagenes_bp)
 
 # Configuración para subida de archivos
 UPLOAD_FOLDER = os.path.join('static', 'images')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'jfif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # Caché de 1 año para archivos estáticos
 
@@ -180,8 +234,10 @@ def admin_redirect():
 def checkout():
     if request.method == "GET":
         plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
-        return render_template("checkout.html", base_template=plantilla_base)
+        mp_error = request.args.get("mp_error", "")
+        return render_template("checkout.html", base_template=plantilla_base, mp_error=mp_error)
     else:
+        plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
         try:
             # Datos enviados por formulario
             nombre = request.form.get("nombre")
@@ -209,6 +265,8 @@ def checkout():
                 info_pago = "Tarjeta (repartidor lleva terminal)"
             elif pago == "Transferencia":
                 info_pago = "Transferencia SPEI"
+            elif pago == "Mercado Pago":
+                info_pago = "Mercado Pago (pago en línea)"
             
             session["colonia"] = colonia
             session["horario_entrega"] = horario_entrega
@@ -237,6 +295,98 @@ def checkout():
             folio, uuid_cotizacion = guardar_cotizacion_web(carrito)
             session["folio"] = folio
             session["uuid_cotizacion"] = uuid_cotizacion
+
+            snapshot = {
+                "nombre": nombre,
+                "direccion": direccion,
+                "colonia": colonia,
+                "telefono": telefono,
+                "numero_cliente": numero_cliente,
+                "horario_entrega": horario_entrega,
+                "pago": pago,
+                "info_pago": info_pago,
+                "pago_efectivo_cambio": pago_efectivo_cambio,
+                "pago_efectivo_monto": pago_efectivo_monto,
+                "carrito": carrito,
+                "total": total,
+                "ahorro": ahorro,
+                "folio": folio,
+                "created_at": datetime.now(mexico_timezone).strftime('%d/%m/%Y %H:%M')
+            }
+            _store_order_snapshot(folio, snapshot)
+
+            # Si el método es Mercado Pago, crear preferencia y redirigir
+            if pago == "Mercado Pago":
+                access_token = os.environ.get("MERCADOPAGO_ACCESS_TOKEN") or os.environ.get("MP_ACCESS_TOKEN")
+                if not access_token:
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="No hay token de Mercado Pago configurado."
+                    )
+
+                items = []
+                for p in carrito:
+                    items.append({
+                        "title": p.get("nombre", "Producto"),
+                        "quantity": int(p.get("cantidad", 1)),
+                        "unit_price": float(p.get("precio", 0)),
+                        "currency_id": "MXN"
+                    })
+
+                base_url = os.environ.get("PUBLIC_BASE_URL") or request.url_root.rstrip("/")
+                if not base_url.startswith("https://"):
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="Mercado Pago requiere una URL pública https. Configura PUBLIC_BASE_URL con tu dominio https (o ngrok https)."
+                    )
+
+                preference = {
+                    "items": items,
+                    "external_reference": folio or "",
+                    "back_urls": {
+                        "success": f"{base_url}/confirmacion?status=approved",
+                        "pending": f"{base_url}/confirmacion?status=pending",
+                        "failure": f"{base_url}/confirmacion?status=failure"
+                    },
+                    "auto_return": "approved",
+                    "payer": {
+                        "name": nombre,
+                        "phone": {
+                            "number": telefono
+                        }
+                    }
+                }
+
+                mp_url = "https://api.mercadopago.com/checkout/preferences"
+                headers = {
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json"
+                }
+
+                response = requests.post(mp_url, headers=headers, json=preference, timeout=20)
+                if response.status_code >= 400:
+                    print(f"❌ Error Mercado Pago: {response.status_code} - {response.text}")
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="No se pudo iniciar el pago con Mercado Pago."
+                    )
+
+                data = response.json()
+                init_point = data.get("init_point")
+                if not init_point:
+                    print(f"❌ Respuesta Mercado Pago sin init_point: {data}")
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="No se pudo iniciar el pago con Mercado Pago."
+                    )
+
+                session["mp_preference_id"] = data.get("id", "")
+                _map_preference_to_folio(session.get("mp_preference_id"), folio)
+                return redirect(init_point)
 
             return redirect("/confirmacion")
 
@@ -318,7 +468,7 @@ def rifa2026():
 
 @app.route("/confirmacion")
 def confirmacion():
-    nombre = session.get("nombre", "Cliente")
+    nombre = session.get("nombre", "")
     direccion = session.get("direccion", "")
     colonia = session.get("colonia", "")
     telefono = session.get("telefono", "")
@@ -332,6 +482,84 @@ def confirmacion():
     total = session.get("total", 0)
     ahorro = session.get("ahorro", 0)
     folio = session.get("folio", "")
+
+    # Detectar retorno de Mercado Pago y ajustar método de pago si aplica
+    mp_status = request.args.get("collection_status") or request.args.get("status")
+    mp_payment_id = request.args.get("payment_id") or request.args.get("collection_id")
+    mp_preference_id = request.args.get("preference_id")
+    if mp_status or mp_payment_id:
+        pago = "Mercado Pago"
+        if mp_status:
+            estado = mp_status.lower()
+            if estado == "approved":
+                info_pago = "Mercado Pago (pago en línea aprobado)"
+            else:
+                info_pago = f"Mercado Pago (estado: {mp_status})"
+        else:
+            info_pago = "Mercado Pago (pago en línea)"
+        session["pago"] = pago
+        session["info_pago"] = info_pago
+
+    # Recuperar datos si la sesión llegó vacía (retorno de Mercado Pago)
+    datos_vacios = not carrito and not nombre and not direccion and not telefono
+    if datos_vacios and (mp_payment_id or mp_preference_id):
+        try:
+            folio_recuperado = None
+
+            # Intentar por preference_id
+            if mp_preference_id:
+                folio_recuperado = _get_folio_by_preference_id(mp_preference_id)
+
+            # Intentar por payment_id consultando a Mercado Pago
+            if not folio_recuperado and mp_payment_id:
+                access_token = os.environ.get("MERCADOPAGO_ACCESS_TOKEN") or os.environ.get("MP_ACCESS_TOKEN")
+                if access_token:
+                    mp_payment_url = f"https://api.mercadopago.com/v1/payments/{mp_payment_id}"
+                    headers = {"Authorization": f"Bearer {access_token}"}
+                    resp = requests.get(mp_payment_url, headers=headers, timeout=20)
+                    if resp.status_code < 400:
+                        payment_data = resp.json()
+                        folio_recuperado = payment_data.get("external_reference")
+                        if not mp_status:
+                            mp_status = payment_data.get("status")
+                    else:
+                        print(f"❌ Error consultando pago MP: {resp.status_code} - {resp.text}")
+
+            # Cargar snapshot desde cache
+            if folio_recuperado:
+                snapshot = _get_order_snapshot_by_folio(folio_recuperado)
+                if snapshot:
+                    nombre = snapshot.get("nombre", "")
+                    direccion = snapshot.get("direccion", "")
+                    colonia = snapshot.get("colonia", "")
+                    telefono = snapshot.get("telefono", "")
+                    numero_cliente = snapshot.get("numero_cliente", "")
+                    horario_entrega = snapshot.get("horario_entrega", "")
+                    pago = snapshot.get("pago", pago)
+                    info_pago = snapshot.get("info_pago", info_pago)
+                    pago_efectivo_cambio = snapshot.get("pago_efectivo_cambio", "")
+                    pago_efectivo_monto = snapshot.get("pago_efectivo_monto", "")
+                    carrito = snapshot.get("carrito", [])
+                    total = snapshot.get("total", 0)
+                    ahorro = snapshot.get("ahorro", 0)
+                    folio = snapshot.get("folio", folio_recuperado)
+
+                    session["nombre"] = nombre
+                    session["direccion"] = direccion
+                    session["colonia"] = colonia
+                    session["telefono"] = telefono
+                    session["numero_cliente"] = numero_cliente
+                    session["horario_entrega"] = horario_entrega
+                    session["pago"] = pago
+                    session["info_pago"] = info_pago
+                    session["pago_efectivo_cambio"] = pago_efectivo_cambio
+                    session["pago_efectivo_monto"] = pago_efectivo_monto
+                    session["carrito"] = carrito
+                    session["total"] = total
+                    session["ahorro"] = ahorro
+                    session["folio"] = folio
+        except Exception as e:
+            print(f"❌ Error al recuperar datos de MP: {e}")
 
     plantilla_base = 'base_movil.html' if es_movil() else 'base_escritorio.html'
 
@@ -359,44 +587,56 @@ def confirmacion():
     except Exception as e:
         print(f"❌ Error al guardar pedido: {e}")
 
+    datos_completos = bool(carrito) and (bool(telefono) or bool(direccion) or bool(nombre))
+    telegram_enviado = session.get("telegram_enviado", False)
+
     # Enviar notificación a Telegram
     try:
-        from telegram_notifier import send_telegram_message
+        if datos_completos and not telegram_enviado:
+            from telegram_notifier import send_telegram_message
 
-        # Crear enlace de WhatsApp
-        telefono_limpio = telefono.replace(" ", "").replace("-", "")
-        enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
+            # Crear enlace de WhatsApp
+            telefono_limpio = telefono.replace(" ", "").replace("-", "")
+            enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
 
-        # Determinar emoji para el horario
-        horario_emoji = "🚀" if "antes posible" in horario_entrega.lower() else "⏰"
-        
-        # Determinar emoji y detalles para el método de pago
-        if pago == "Efectivo":
-            pago_emoji = "💵"
-            # Validar que las variables de efectivo existan antes de usarlas
-            efectivo_cambio = pago_efectivo_cambio if 'pago_efectivo_cambio' in locals() else ""
-            efectivo_monto = pago_efectivo_monto if 'pago_efectivo_monto' in locals() else ""
+            # Determinar emoji para el horario
+            horario_emoji = "🚀" if "antes posible" in horario_entrega.lower() else "⏰"
             
-            if efectivo_cambio == "si" and efectivo_monto:
-                try:
-                    monto = float(efectivo_monto)
-                    cambio = monto - total
-                    pago_detalle = f"Paga con ${monto:.2f} (necesita cambio de ${cambio:.2f})"
-                except (ValueError, TypeError):
+            # Determinar emoji y detalles para el método de pago
+            if pago == "Efectivo":
+                pago_emoji = "💵"
+                # Validar que las variables de efectivo existan antes de usarlas
+                efectivo_cambio = pago_efectivo_cambio if 'pago_efectivo_cambio' in locals() else ""
+                efectivo_monto = pago_efectivo_monto if 'pago_efectivo_monto' in locals() else ""
+                
+                if efectivo_cambio == "si" and efectivo_monto:
+                    try:
+                        monto = float(efectivo_monto)
+                        cambio = monto - total
+                        pago_detalle = f"Paga con ${monto:.2f} (necesita cambio de ${cambio:.2f})"
+                    except (ValueError, TypeError):
+                        pago_detalle = "Pago justo (sin cambio)"
+                else:
                     pago_detalle = "Pago justo (sin cambio)"
+            elif pago == "Tarjeta":
+                pago_emoji = "💳"
+                pago_detalle = "Repartidor llevará terminal bancaria\n• Acepta débito y crédito\n• Visa, MasterCard, AmEx\n• Sin comisiones"
+            elif pago == "Transferencia":
+                pago_emoji = "🏦"
+                pago_detalle = "SPEI/Transferencia bancaria\n• Tarjeta: 5204 1662 0566 9791\n• Banco: BANAMEX\n• A nombre de: EFREN UZIEL SOTO JAIMES"
+            elif pago == "Mercado Pago":
+                pago_emoji = "📱"
+                if mp_status:
+                    pago_detalle = f"Pago en línea con Mercado Pago\n• Estado: {mp_status}"
+                else:
+                    pago_detalle = "Pago en línea con Mercado Pago"
+                if mp_payment_id:
+                    pago_detalle += f"\n• ID de pago: {mp_payment_id}"
             else:
-                pago_detalle = "Pago justo (sin cambio)"
-        elif pago == "Tarjeta":
-            pago_emoji = "💳"
-            pago_detalle = "Repartidor llevará terminal bancaria\n• Acepta débito y crédito\n• Visa, MasterCard, AmEx\n• Sin comisiones"
-        elif pago == "Transferencia":
-            pago_emoji = "🏦"
-            pago_detalle = "SPEI/Transferencia bancaria\n• Tarjeta: 5204 1662 0566 9791\n• Banco: BANAMEX\n• A nombre de: EFREN UZIEL SOTO JAIMES"
-        else:
-            pago_emoji = "💰"
-            pago_detalle = info_pago
+                pago_emoji = "💰"
+                pago_detalle = info_pago
 
-        mensaje = f"""🛒 <b>NUEVO PEDIDO RECIBIDO</b>
+            mensaje = f"""🛒 <b>NUEVO PEDIDO RECIBIDO</b>
 
 👤 <b>DATOS DEL CLIENTE</b>
 <b>Nombre:</b> {nombre}
@@ -404,10 +644,10 @@ def confirmacion():
 <b>Colonia:</b> {colonia}
 <b>Teléfono:</b> {telefono}"""
 
-        if numero_cliente:
-            mensaje += f"\n<b>N° Cliente:</b> {numero_cliente}"
+            if numero_cliente:
+                mensaje += f"\n<b>N° Cliente:</b> {numero_cliente}"
 
-        mensaje += f"""
+            mensaje += f"""
 
 {horario_emoji} <b>HORARIO DE ENTREGA</b>
 <b>{horario_entrega}</b>
@@ -418,50 +658,51 @@ def confirmacion():
 
 📦 <b>PRODUCTOS PEDIDOS</b>"""
 
-        # Agregar productos con mejor formato
-        for p in carrito:
-            precio_unitario = p['precio']
-            cantidad = p['cantidad']
-            subtotal = cantidad * precio_unitario
+            # Agregar productos con mejor formato
+            for p in carrito:
+                precio_unitario = p['precio']
+                cantidad = p['cantidad']
+                subtotal = cantidad * precio_unitario
+                
+                # Mostrar si hay descuento
+                if p.get('precio_original') and p['precio_original'] > precio_unitario:
+                    descuento = p['precio_original'] - precio_unitario
+                    mensaje += f"\n• {p['nombre']}"
+                    mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
+                    mensaje += f"\n  💸 Descuento: ${descuento:.2f} c/u"
+                else:
+                    mensaje += f"\n• {p['nombre']}"
+                    mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
+
+            mensaje += f"""\n\n💰 <b>RESUMEN FINANCIERO</b>"""
             
-            # Mostrar si hay descuento
-            if p.get('precio_original') and p['precio_original'] > precio_unitario:
-                descuento = p['precio_original'] - precio_unitario
-                mensaje += f"\n• {p['nombre']}"
-                mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
-                mensaje += f"\n  💸 Descuento: ${descuento:.2f} c/u"
+            if ahorro > 0:
+                subtotal_original = total + ahorro
+                mensaje += f"\n<b>Subtotal:</b> ${subtotal_original:.2f}"
+                mensaje += f"\n<b>Descuentos:</b> -${ahorro:.2f}"
+                mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
             else:
-                mensaje += f"\n• {p['nombre']}"
-                mensaje += f"\n  📊 {cantidad} x ${precio_unitario:.2f} = <b>${subtotal:.2f}</b>"
+                mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
 
-        mensaje += f"""\n\n💰 <b>RESUMEN FINANCIERO</b>"""
-        
-        if ahorro > 0:
-            subtotal_original = total + ahorro
-            mensaje += f"\n<b>Subtotal:</b> ${subtotal_original:.2f}"
-            mensaje += f"\n<b>Descuentos:</b> -${ahorro:.2f}"
-            mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
-        else:
-            mensaje += f"\n<b>TOTAL A PAGAR:</b> ${total:.2f} ✅"
-
-        mensaje += f"""\n\n📅 <b>INFORMACIÓN ADICIONAL</b>
+            mensaje += f"""\n\n📅 <b>INFORMACIÓN ADICIONAL</b>
 <b>Fecha/Hora:</b> {fecha_hora_mx}
 <b>Folio:</b> #{folio if folio else 'N/A'}"""
 
-        # Agregar enlace de WhatsApp con mejor formato
-        mensaje += f"""\n\n📱 <b>CONTACTO DIRECTO</b>
+            # Agregar enlace de WhatsApp con mejor formato
+            mensaje += f"""\n\n📱 <b>CONTACTO DIRECTO</b>
 <a href="{enlace_whatsapp}">💬 Abrir chat de WhatsApp</a>
 
 🚛 <i>Procesando pedido para entrega...</i>"""
 
-        send_telegram_message(mensaje)
+            send_telegram_message(mensaje)
+            session["telegram_enviado"] = True
 
     except Exception as e:
         print(f"❌ Error al enviar notificación a Telegram: {e}")
 
     return render_template("confirmacion.html",
                            base_template=plantilla_base,
-                           nombre=nombre,
+                           nombre=nombre or "Cliente",
                            direccion=direccion,
                            colonia=colonia,
                            telefono=telefono,
@@ -472,7 +713,68 @@ def confirmacion():
                            carrito=carrito,
                            total=total,
                            ahorro=ahorro,
-                           pedido_id=session.get("folio"))
+                           pedido_id=session.get("folio"),
+                           mp_status=mp_status,
+                           mp_payment_id=mp_payment_id)
+
+
+@app.route("/api/confirmacion/recuperar", methods=["POST"])
+def recuperar_confirmacion():
+    try:
+        data = request.get_json(silent=True) or {}
+
+        nombre = (data.get("nombre") or "").strip()
+        direccion = (data.get("direccion") or "").strip()
+        colonia = (data.get("colonia") or "").strip()
+        telefono = (data.get("telefono") or "").strip()
+        numero_cliente = (data.get("numero_cliente") or "").strip()
+        horario_entrega = (data.get("horario_entrega") or "").strip()
+        pago = (data.get("pago") or "").strip()
+        info_pago = (data.get("info_pago") or pago).strip()
+        pago_efectivo_cambio = (data.get("pago_efectivo_cambio") or "").strip()
+        pago_efectivo_monto = (data.get("pago_efectivo_monto") or "").strip()
+        carrito = data.get("carrito") or []
+        folio = (data.get("folio") or "").strip()
+
+        if not isinstance(carrito, list):
+            carrito = []
+
+        if not data.get("total"):
+            total = sum(float(p.get("precio", 0)) * int(p.get("cantidad", 0)) for p in carrito)
+        else:
+            total = float(data.get("total", 0))
+
+        if not data.get("ahorro"):
+            ahorro = sum(
+                (float(p.get("precio_original", 0)) - float(p.get("precio", 0))) * int(p.get("cantidad", 0))
+                for p in carrito
+                if float(p.get("precio_original", 0)) > float(p.get("precio", 0))
+            )
+        else:
+            ahorro = float(data.get("ahorro", 0))
+
+        session["nombre"] = nombre
+        session["direccion"] = direccion
+        session["colonia"] = colonia
+        session["telefono"] = telefono
+        session["numero_cliente"] = numero_cliente
+        session["horario_entrega"] = horario_entrega
+        session["pago"] = pago
+        session["info_pago"] = info_pago
+        session["pago_efectivo_cambio"] = pago_efectivo_cambio
+        session["pago_efectivo_monto"] = pago_efectivo_monto
+        session["carrito"] = carrito
+        session["total"] = total
+        session["ahorro"] = ahorro
+        if folio:
+            session["folio"] = folio
+
+        session["telegram_enviado"] = False
+
+        return jsonify({"success": True})
+    except Exception as e:
+        print(f"❌ Error al recuperar confirmación: {e}")
+        return jsonify({"success": False, "error": "Error al recuperar confirmación"}), 500
 
 
 def es_movil():

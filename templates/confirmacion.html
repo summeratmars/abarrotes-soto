@@ -4,6 +4,11 @@
 <div style="max-width: 800px; margin: auto; padding: 20px;">
     <div class="check" style="font-size: 100px; color: green;">✅</div>
     <h1 style="color: #2e7d32; margin-bottom: 10px;">¡Pedido recibido correctamente!</h1>
+        <div id="confirmacion-data"
+            data-has-carrito="{{ 1 if carrito else 0 }}"
+            data-telefono="{{ telefono }}"
+            data-mp-status="{{ mp_status or '' }}"
+            data-mp-payment-id="{{ mp_payment_id or '' }}"></div>
     {% if pedido_id %}
     <p style="font-size:1.2em;color:#b30000;font-weight:bold;">Tu número de pedido es: #{{ pedido_id }}</p>
     {% endif %}
@@ -90,6 +95,10 @@
     function limpiarPedido() {
         localStorage.removeItem('carrito');
         localStorage.removeItem('pedido_enviado');
+        localStorage.removeItem('metodo_pago');
+        localStorage.removeItem('horario_entrega');
+        localStorage.removeItem('pago_efectivo_cambio');
+        localStorage.removeItem('pago_efectivo_monto');
     }
     </script>
 
@@ -119,16 +128,90 @@
 </style>
 
 <script>
-    // Limpiar el carrito del localStorage y del flotante
-    window.onload = function () {
-        localStorage.removeItem('carrito');
-        localStorage.setItem('pedido_enviado', '1');
-        carrito = [];  // 👈 fuerza la variable a estar vacía en memoria
-        document.getElementById('carrito-contador')?.textContent = '0';
-        document.getElementById('carrito-total')?.textContent = '0.00';
-        document.getElementById('carrito')?.style?.display = 'none';
-        mostrarToast("Pedido enviado correctamente");
-    };
+    // Recuperar datos si la sesión llegó vacía (retorno de Mercado Pago)
+    async function intentarRecuperacion() {
+        const dataElem = document.getElementById('confirmacion-data');
+        const hasCarrito = dataElem?.dataset?.hasCarrito === '1';
+        if (hasCarrito) return false;
+
+        const carritoLocal = JSON.parse(localStorage.getItem('carrito') || '[]');
+        if (!carritoLocal.length) return false;
+
+        const mpStatus = dataElem?.dataset?.mpStatus || '';
+        const mpPaymentId = dataElem?.dataset?.mpPaymentId || '';
+
+        let metodoPago = localStorage.getItem('metodo_pago') || '';
+        if (!metodoPago && (mpStatus || mpPaymentId)) {
+            metodoPago = 'Mercado Pago';
+        }
+
+        let infoPago = metodoPago;
+        if (metodoPago === 'Mercado Pago') {
+            if (mpStatus) {
+                infoPago = mpStatus.toLowerCase() === 'approved'
+                    ? 'Mercado Pago (pago en línea aprobado)'
+                    : `Mercado Pago (estado: ${mpStatus})`;
+            } else {
+                infoPago = 'Mercado Pago (pago en línea)';
+            }
+        }
+
+        const total = carritoLocal.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+        const ahorro = carritoLocal.reduce((sum, p) => {
+            if (p.precio_original && p.precio_original > p.precio) {
+                return sum + ((p.precio_original - p.precio) * p.cantidad);
+            }
+            return sum;
+        }, 0);
+
+        const payload = {
+            nombre: localStorage.getItem('usuario_nombre') || '',
+            telefono: localStorage.getItem('usuario_telefono') || '',
+            numero_cliente: localStorage.getItem('usuario_numero_cliente') || '',
+            direccion: localStorage.getItem('usuario_direccion') || '',
+            colonia: localStorage.getItem('usuario_colonia') || '',
+            horario_entrega: localStorage.getItem('horario_entrega') || '',
+            pago: metodoPago,
+            info_pago: infoPago,
+            pago_efectivo_cambio: localStorage.getItem('pago_efectivo_cambio') || '',
+            pago_efectivo_monto: localStorage.getItem('pago_efectivo_monto') || '',
+            carrito: carritoLocal,
+            total: total,
+            ahorro: ahorro
+        };
+
+        try {
+            const res = await fetch('/api/confirmacion/recuperar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                location.reload();
+                return true;
+            }
+        } catch (e) {
+            console.error('Error recuperando confirmación', e);
+        }
+        return false;
+    }
+
+    // Limpiar el carrito del localStorage y del flotante solo cuando ya hay datos
+    window.addEventListener('load', async function () {
+        const recuperado = await intentarRecuperacion();
+        if (recuperado) return;
+
+        const dataElem = document.getElementById('confirmacion-data');
+        const hasCarrito = dataElem?.dataset?.hasCarrito === '1';
+        if (hasCarrito) {
+            localStorage.removeItem('carrito');
+            localStorage.setItem('pedido_enviado', '1');
+            document.getElementById('carrito-contador')?.textContent = '0';
+            document.getElementById('carrito-total')?.textContent = '0.00';
+            document.getElementById('carrito')?.style?.display = 'none';
+            mostrarToast("Pedido enviado correctamente");
+        }
+    });
 
     function mostrarToast(mensaje, color = "#4CAF50", icono = "✅") {
         const toast = document.getElementById("toast");
@@ -178,7 +261,7 @@ function actualizarBotonCarrito() {
     if (totalSpan) totalSpan.textContent = total.toFixed(2);
 }
 
-window.onload = actualizarBotonCarrito;
+window.addEventListener('load', actualizarBotonCarrito);
 </script>
 
 {% endblock %}
