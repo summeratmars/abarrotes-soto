@@ -1,190 +1,189 @@
+"""
+db_utils.py - Módulo de acceso a base de datos azula_pdv (MariaDB)
+Adaptado a la nueva estructura del punto de venta Azula PDV.
+Usa aliases SQL para mantener compatibilidad con los templates existentes.
+"""
 import json
-import uuid
+import re
+import os
 from datetime import datetime, timedelta
 import mysql.connector
 from mysql.connector import Error
-import re
-import os
 from dotenv import load_dotenv
-from notificador_imagenes import verificar_imagen_producto
 
 # Cargar variables de entorno
 load_dotenv()
 
+
 def get_db_connection():
+    """Obtiene conexión a la base de datos MariaDB azula_pdv."""
     return mysql.connector.connect(
-        host=os.environ.get('DB_HOST'),
-        user=os.environ.get('DB_USER'),
-        password=os.environ.get('DB_PASSWORD'),
-        database=os.environ.get('DB_NAME'),
+        host=os.environ.get('DB_HOST', 'localhost'),
+        user=os.environ.get('DB_USER', 'root'),
+        password=os.environ.get('DB_PASSWORD', 'root'),
+        database=os.environ.get('DB_NAME', 'azula_pdv'),
         port=int(os.environ.get('DB_PORT', '3306'))
     )
 
-# --- GUARDAR COTIZACION WEB ---
+# ---------------------------------------------------------------------------
+# GUARDAR PEDIDO ONLINE (reemplaza guardar_cotizacion_web)
+# ---------------------------------------------------------------------------
 def guardar_cotizacion_web(carrito, observaciones="Generado por tienda en línea"):
     """
-    Guarda una cotización web en la tabla cotizacion con el formato JSON requerido.
-    El uuid_cliente será nulo para público general.
+    Guarda un pedido online en las tablas pedidos_online + detalles_pedido_online.
+    Retorna (numero_pedido, pedido_id) en lugar de (folio, uuid_cotizacion).
     """
     conn = get_db_connection()
     try:
-        cursor = conn.cursor()
-        # Obtener próximo número de folio (autoincremental simple)
-        cursor.execute("SELECT MAX(CAST(folio AS UNSIGNED)) FROM cotizacion WHERE folio REGEXP '^[0-9]+$'")
-        last = cursor.fetchone()
-        if last and last[0]:
-            folio_num = int(last[0]) + 1
-        else:
-            folio_num = 12  # Comenzar desde 12 como indica el contexto
-        folio = str(folio_num)
+        cursor = conn.cursor(dictionary=True)
 
-        # uuid_cotizacion y uuid_cliente
-        uuid_cotizacion = str(uuid.uuid4())
-        uuid_cliente = '00000000-0000-0000-0000-000000000000'  # UUID nulo para público general
-        uuid_sucursal = '22C8131D-4431-4E9A-AA04-ED188217C549'
+        # Generar número de pedido único
+        cursor.execute("SELECT MAX(id) AS max_id FROM pedidos_online")
+        row = cursor.fetchone()
+        next_id = (row['max_id'] or 0) + 1
+        numero_pedido = f"WEB-{next_id:06d}"
 
         # Calcular totales consultando info completa de BD
         productos = []
         subtotal = 0.0
         descuento_total = 0.0
-        
+
         for prod in carrito:
             cantidad = float(prod.get('cantidad', 1))
             codigo_barras = prod.get('cbarras') or prod.get('codigo_barras') or prod.get('codigo') or ""
-            
+
             # Consultar información completa del producto desde BD
             cursor.execute('''
-                SELECT p.cbarras, p.nombre_producto, ps.precio_venta, ps.precio_venta2, 
-                       ps.dCantMinPP2, u.clave_unidad, p.is_granel, ps.precio_venta3, ps.dCantMinPP3
-                FROM producto p
-                JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
-                LEFT JOIN c_unidad u ON p.clave_unidad = u.clave_unidad
-                WHERE p.cbarras = %s AND ps.uuid_sucursal = %s
-            ''', (codigo_barras, uuid_sucursal))
-            
+                SELECT p.id, p.codigo_barras, p.nombre, p.precio_venta, p.unidad_medida
+                FROM productos p
+                WHERE (p.codigo_barras = %s OR p.codigo = %s) AND p.activo = 1
+                LIMIT 1
+            ''', (codigo_barras, codigo_barras))
             producto_info = cursor.fetchone()
-            
+
             if producto_info:
-                precio_venta = float(producto_info[2])
-                precio_venta2 = float(producto_info[3]) if producto_info[3] else 0.0
-                dcantminpp2 = float(producto_info[4]) if producto_info[4] else 0.0
-                unidad_correcta = producto_info[5] or "PZA"
-                nombre_producto = producto_info[1]
-                is_granel = producto_info[6] or 0
-                precio_venta3 = float(producto_info[7]) if producto_info[7] else 0.0
-                dcantminpp3 = float(producto_info[8]) if producto_info[8] else 0.0
-                
-                # Calcular precio aplicable y descuento
+                producto_id = producto_info['id']
+                precio_venta = float(producto_info['precio_venta'])
+                nombre_producto = producto_info['nombre']
+
+                # Buscar precio escalonado aplicable
+                cursor.execute('''
+                    SELECT precio, cantidad_minima
+                    FROM precios_escalonados
+                    WHERE producto_id = %s AND activo = 1
+                    ORDER BY cantidad_minima DESC
+                ''', (producto_id,))
+                precios_esc = cursor.fetchall()
+
                 precio_aplicable = precio_venta
                 descuento_unitario = 0.0
-                
-                # Prioridad: Mayoreo (precio3) > Oferta (precio2) > Normal
-                if precio_venta3 > 0 and dcantminpp3 > 0 and cantidad >= dcantminpp3:
-                    # Aplica precio de mayoreo
-                    descuento_unitario = precio_venta - precio_venta3
-                    precio_aplicable = precio_venta3
-                elif precio_venta2 > 0 and dcantminpp2 > 0 and cantidad >= dcantminpp2:
-                    # Aplica precio de oferta por cantidad
-                    descuento_unitario = precio_venta - precio_venta2
-                    precio_aplicable = precio_venta2
-                
-                subtotal_prod = cantidad * precio_aplicable
+
+                for pe in precios_esc:
+                    if cantidad >= float(pe['cantidad_minima']):
+                        precio_aplicable = float(pe['precio'])
+                        descuento_unitario = precio_venta - precio_aplicable
+                        break
+
+                subtotal_prod = cantidad * precio_venta
                 descuento_prod = cantidad * descuento_unitario
-                importe_original = cantidad * precio_venta  # Precio original sin descuento
-                
+
                 productos.append({
+                    "producto_id": producto_id,
                     "codigo_barras": codigo_barras,
                     "nombre": nombre_producto,
                     "cantidad": cantidad,
                     "precio_unitario": precio_aplicable,
-                    "subtotal": subtotal_prod,
-                    "importe_original": importe_original,
-                    "unidad": unidad_correcta
+                    "descuento": descuento_unitario,
+                    "subtotal": cantidad * precio_aplicable,
+                    "importe_original": subtotal_prod,
+                    "unidad": producto_info['unidad_medida'] or "PZA"
                 })
-                
-                subtotal += importe_original  # ✅ CORREGIDO: Sumar precio ORIGINAL para subtotal
+
+                subtotal += subtotal_prod
                 descuento_total += descuento_prod
             else:
                 # Fallback si no encontramos el producto en BD
                 precio = float(prod.get('precio', 0))
                 subtotal_prod = cantidad * precio
                 productos.append({
+                    "producto_id": None,
                     "codigo_barras": codigo_barras,
                     "nombre": prod.get('nombre') or prod.get('nombre_producto') or "",
                     "cantidad": cantidad,
                     "precio_unitario": precio,
+                    "descuento": 0,
                     "subtotal": subtotal_prod,
                     "importe_original": subtotal_prod,
                     "unidad": "PZA"
                 })
                 subtotal += subtotal_prod
-        
-        # ✅ CORREGIDO: Total = Subtotal - Descuentos
+
         total = subtotal - descuento_total
 
-        # Fechas
-        hoy = datetime.now()
-        fecha_vencimiento = (hoy + timedelta(days=30)).strftime("%Y-%m-%d")
-        creado_en = hoy.strftime("%Y-%m-%d %H:%M:%S")
-
-        # JSON exacto según formato especificado
-        cot_json = {
-            "uuid_cotizacion": uuid_cotizacion,
-            "cliente_id": None,
-            "productos": productos,
-            "subtotal": subtotal,
-            "descuento": descuento_total,
-            "total": total,
-            "forma_pago": None,
-            "metodo_pago": None,
-            "condiciones": "Pedido en línea",
-            "observaciones": observaciones,
-            "fecha_vencimiento": fecha_vencimiento,
-            "creado_en": creado_en
-        }
-
-        # Insertar en cotizacion con todos los campos necesarios
-        sql = """
-            INSERT INTO cotizacion (
-                folio, json, fecha_vencimiento, subtotal, descuento, total,
-                uuid_cliente, uuid_sucursal, uuid_cotizacion, is_active
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        # Insertar pedido online
+        sql_pedido = """
+            INSERT INTO pedidos_online (
+                numero_pedido, cliente_nombre, subtotal, descuento, total,
+                estado, notas
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
         """
-        cursor.execute(sql, (
-            folio,
-            json.dumps(cot_json, ensure_ascii=False),
-            fecha_vencimiento,
+        cursor.execute(sql_pedido, (
+            numero_pedido,
+            'Cliente Online',
             subtotal,
-            descuento_total,  # ✅ AGREGAR campo descuento
+            descuento_total,
             total,
-            uuid_cliente,
-            uuid_sucursal,
-            uuid_cotizacion,
-            1  # is_active
+            'Pendiente',
+            observaciones
         ))
+        pedido_id = cursor.lastrowid
+
+        # Insertar detalles
+        for p in productos:
+            sql_detalle = """
+                INSERT INTO detalles_pedido_online (
+                    pedido_id, producto_id, nombre_producto, cantidad,
+                    precio_unitario, descuento, subtotal
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_detalle, (
+                pedido_id,
+                p['producto_id'],
+                p['nombre'],
+                p['cantidad'],
+                p['precio_unitario'],
+                p['descuento'],
+                p['subtotal']
+            ))
+
         conn.commit()
-        return folio, uuid_cotizacion
+        # Retorna (folio, uuid) para compatibilidad - usamos numero_pedido como folio
+        return numero_pedido, str(pedido_id)
     except Exception as e:
         conn.rollback()
-        print(f"Error al guardar cotización: {e}")
+        print(f"Error al guardar pedido online: {e}")
         return None, None
     finally:
         conn.close()
 
-def registrar_cliente_monedero(nombre_completo, telefono, sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549'):
+
+# ---------------------------------------------------------------------------
+# REGISTRAR CLIENTE
+# ---------------------------------------------------------------------------
+def registrar_cliente_monedero(nombre_completo, telefono):
     """
-    Registra un cliente nuevo para la sucursal ABARROTES SOTO CH.
-    - Separa nombre y apellidos.
-    - Valida que el teléfono no exista.
-    - Inserta en la tabla cliente.
-    - Genera vCodigoCliente (CLI + idcliente con ceros).
-    - Retorna vCodigoCliente, idcliente, nombre, apellidos.
+    Registra un cliente nuevo en la tabla clientes.
+    Retorna (dict_cliente, None) o (None, error_msg).
     """
     conn = get_db_connection()
     try:
         cursor = conn.cursor(dictionary=True)
+
         # Validar que el teléfono no exista
-        cursor.execute("SELECT idcliente FROM cliente WHERE telefono = %s AND is_active=1 LIMIT 1", (telefono,))
+        cursor.execute(
+            "SELECT id FROM clientes WHERE telefono = %s AND activo = 1 LIMIT 1",
+            (telefono,)
+        )
         if cursor.fetchone():
             return None, "El teléfono ya está registrado."
 
@@ -192,33 +191,29 @@ def registrar_cliente_monedero(nombre_completo, telefono, sucursal_uuid='22C8131
         partes = re.split(r'\s+', nombre_completo.strip())
         if len(partes) == 1:
             nombre = partes[0]
-            apellidos = ''
+            apellido = ''
         elif len(partes) == 2:
-            nombre, apellidos = partes
+            nombre, apellido = partes
         else:
             nombre = partes[0]
-            apellidos = ' '.join(partes[1:])
+            apellido = ' '.join(partes[1:])
 
-        # Generar uuid_cliente
-        uuid_cliente = str(uuid.uuid4())
-        # Insertar cliente (agregando uuid_cliente)
-        sql = (
-            "INSERT INTO cliente (uuid_cliente, nombre, apellidos, razon_social, telefono, puntos, is_active) "
-            "VALUES (%s, %s, %s, %s, %s, 0, 1)"
-        )
-        razon_social = nombre_completo.strip()
-        cursor.execute(sql, (uuid_cliente, nombre, apellidos, razon_social, telefono))
-        idcliente = cursor.lastrowid
+        sql = """
+            INSERT INTO clientes (nombre, apellido, telefono, activo)
+            VALUES (%s, %s, %s, 1)
+        """
+        cursor.execute(sql, (nombre, apellido, telefono))
+        cliente_id = cursor.lastrowid
 
-        # Generar vCodigoCliente
-        vCodigoCliente = f"CLI{idcliente:05d}"
-        cursor.execute("UPDATE cliente SET vCodigoCliente = %s WHERE idcliente = %s", (vCodigoCliente, idcliente))
+        # Generar código de cliente compatible
+        vCodigoCliente = f"CLI{cliente_id:05d}"
+
         conn.commit()
         return {
-            'idcliente': idcliente,
+            'idcliente': cliente_id,
             'vCodigoCliente': vCodigoCliente,
             'nombre': nombre,
-            'apellidos': apellidos
+            'apellidos': apellido
         }, None
     except Exception as e:
         conn.rollback()
@@ -226,50 +221,71 @@ def registrar_cliente_monedero(nombre_completo, telefono, sucursal_uuid='22C8131
     finally:
         conn.close()
 
-# --- GUARDAR PEDIDO Y DETALLE EN LA BASE DE DATOS ---
+
+# ---------------------------------------------------------------------------
+# GUARDAR PEDIDO CON DATOS DE ENTREGA
+# ---------------------------------------------------------------------------
 def guardar_pedido_db(nombre, direccion, colonia, telefono, numero_cliente, pago, carrito):
     """
-    Guarda el pedido y sus productos en la base de datos.
-    - carrito: lista de dicts con los productos (de localStorage)
+    Guarda el pedido completo con datos de entrega en pedidos_online + detalles.
     """
     conn = get_db_connection()
     try:
-        with conn.cursor() as cursor:
-            # Insertar cabecera del pedido
-            sql_pedido = """
-                INSERT INTO pedido (nombre, direccion, colonia, telefono, numero_cliente, pago)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(sql_pedido, (nombre, direccion, colonia, telefono, numero_cliente, pago))
-            pedido_id = cursor.lastrowid
+        cursor = conn.cursor(dictionary=True)
 
-            # Insertar productos del pedido con todos los campos requeridos
-            for prod in carrito:
-                sql_detalle = """
-                    INSERT INTO pedido_detalle (
-                        pedido_id, nombre_producto, cantidad, precio,
-                        codigo_barras, uuid_producto, clave_unidad,
-                        precio_venta, precio_venta2, dCantMinPP2,
-                        uuid_departamento, existencia
-                    )
-                    SELECT 
-                        %s, p.nombre_producto, %s, %s,
-                        p.cbarras, p.uuid_producto, p.clave_unidad,
-                        ps.precio_venta, ps.precio_venta2, ps.dCantMinPP2,
-                        p.uuid_departamento, ps.existencia
-                    FROM producto p
-                    JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
-                    WHERE p.nombre_producto = %s 
-                        AND ps.is_active = 1 
-                        AND ps.existencia > 0
-                    LIMIT 1;
-                """
-                cursor.execute(sql_detalle, (
-                    pedido_id,
-                    prod.get('cantidad'),
-                    prod.get('precio'),
-                    prod.get('nombre')
-                ))
+        # Generar número de pedido
+        cursor.execute("SELECT MAX(id) AS max_id FROM pedidos_online")
+        row = cursor.fetchone()
+        next_id = (row['max_id'] or 0) + 1
+        numero_pedido = f"WEB-{next_id:06d}"
+
+        # Calcular total
+        total = sum(float(p.get('precio', 0)) * float(p.get('cantidad', 1)) for p in carrito)
+
+        direccion_completa = f"{direccion}, Col. {colonia}" if colonia else direccion
+
+        sql_pedido = """
+            INSERT INTO pedidos_online (
+                numero_pedido, cliente_nombre, cliente_telefono,
+                direccion, subtotal, total, estado, metodo_pago, notas
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql_pedido, (
+            numero_pedido, nombre, telefono,
+            direccion_completa, total, total, 'Pendiente', pago,
+            f"Cliente: {numero_cliente}" if numero_cliente else None
+        ))
+        pedido_id = cursor.lastrowid
+
+        # Insertar detalles
+        for prod in carrito:
+            cantidad = float(prod.get('cantidad', 1))
+            precio = float(prod.get('precio', 0))
+            nombre_prod = prod.get('nombre') or prod.get('nombre_producto') or ''
+            codigo = prod.get('cbarras') or prod.get('codigo_barras') or ''
+
+            # Buscar producto_id en BD
+            producto_id = None
+            if codigo:
+                cursor.execute(
+                    "SELECT id FROM productos WHERE (codigo_barras = %s OR codigo = %s) AND activo = 1 LIMIT 1",
+                    (codigo, codigo)
+                )
+                r = cursor.fetchone()
+                if r:
+                    producto_id = r['id']
+
+            sql_det = """
+                INSERT INTO detalles_pedido_online (
+                    pedido_id, producto_id, nombre_producto, cantidad,
+                    precio_unitario, descuento, subtotal
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(sql_det, (
+                pedido_id, producto_id, nombre_prod, cantidad,
+                precio, 0, cantidad * precio
+            ))
+
         conn.commit()
         return pedido_id
     except Exception as e:
@@ -279,9 +295,12 @@ def guardar_pedido_db(nombre, direccion, colonia, telefono, numero_cliente, pago
     finally:
         conn.close()
 
-# Obtiene productos y precios de la sucursal ABARROTES SOTO CH
+
+# ---------------------------------------------------------------------------
+# OBTENER PRODUCTOS (con aliases para compatibilidad con templates)
+# ---------------------------------------------------------------------------
 def obtener_productos_sucursal(
-    sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549',
+    sucursal_uuid=None,  # ignorado en nueva BD (una sola sucursal)
     departamento=None,
     categoria=None,
     query=None,
@@ -289,133 +308,181 @@ def obtener_productos_sucursal(
     pagina=1,
     por_pagina=None
 ):
-    # DEBUG: Ver qué parámetros llegan a la función
+    """
+    Obtiene productos de la BD azula_pdv.
+    Retorna dicts con los mismos nombres de campo que esperan los templates:
+      cbarras, nombre_producto, precio_venta, precio_venta2, dCantMinPP2,
+      precio_venta3, dCantMinPP3, existencia, puntos_lealtad,
+      nombre_departamento, nombre_categoria, nombre_unidad
+    """
     print(f"🔍 DEBUG obtener_productos_sucursal():")
     print(f"   departamento: '{departamento}'")
     print(f"   categoria: '{categoria}'")
     print(f"   query: '{query}'")
-    
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     sql = '''
-        SELECT 
-            p.cbarras,
-            p.nombre_producto,
-            ps.precio_venta,
-            ps.precio_venta2,
-            ps.dCantMinPP2,
-            ps.precio_venta3,
-            ps.dCantMinPP3,
-            ps.existencia,
+        SELECT
+            p.codigo_barras AS cbarras,
+            p.nombre        AS nombre_producto,
+            p.precio_venta,
+            p.stock          AS existencia,
             p.puntos_lealtad,
-            d.nombre_dep AS nombre_departamento,
-            c.nombre_categoria,
-            u.nombre_unidad
-        FROM producto p
-        JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
-        LEFT JOIN categoria c ON p.uuid_categoria = c.uuid_categoria
-        LEFT JOIN departamento d ON c.uuid_departamento = d.uuid_departamento
-        LEFT JOIN c_unidad u ON p.clave_unidad = u.clave_unidad
-        WHERE ps.uuid_sucursal = %s
-          AND ps.existencia >= 1
-          AND p.is_active = 1
-          AND ps.is_active = 1
+            p.unidad_medida  AS nombre_unidad,
+            p.id             AS producto_id,
+            d.nombre         AS nombre_departamento,
+            c.nombre         AS nombre_categoria
+        FROM productos p
+        LEFT JOIN categorias c     ON p.categoria_id = c.id
+        LEFT JOIN departamentos d  ON p.departamento_id = d.id
+        WHERE p.stock >= 1
+          AND p.activo = 1
     '''
-    params = [sucursal_uuid]
+    params = []
+
     if departamento:
-        sql += ' AND d.nombre_dep = %s'
+        sql += ' AND d.nombre = %s'
         params.append(departamento)
+
     if categoria:
-        # Lógica especial para mostrar productos con descuento cuando categoria=ofertas
         if categoria.lower() == 'ofertas':
-            sql += ' AND ps.precio_venta2 > 0 AND ps.precio_venta2 < ps.precio_venta'
+            # Productos que tienen precio escalonado menor al precio normal
+            sql += ''' AND EXISTS (
+                SELECT 1 FROM precios_escalonados pe
+                WHERE pe.producto_id = p.id AND pe.activo = 1 AND pe.precio < p.precio_venta
+            )'''
         else:
-            sql += ' AND c.nombre_categoria = %s'
+            sql += ' AND c.nombre = %s'
             params.append(categoria)
+
     if query:
-        sql += ' AND (LOWER(p.nombre_producto) LIKE %s OR LOWER(c.nombre_categoria) LIKE %s OR LOWER(d.nombre_dep) LIKE %s)'
+        sql += ' AND (LOWER(p.nombre) LIKE %s OR LOWER(c.nombre) LIKE %s OR LOWER(d.nombre) LIKE %s)'
         palabra = f"%{query.strip().lower()}%"
         params.extend([palabra, palabra, palabra])
+
     if orden == 'nombre_asc':
-        sql += ' ORDER BY p.nombre_producto ASC'
+        sql += ' ORDER BY p.nombre ASC'
     elif orden == 'precio_asc':
-        sql += ' ORDER BY COALESCE(NULLIF(ps.precio_venta2,0), ps.precio_venta) ASC'
+        sql += ' ORDER BY p.precio_venta ASC'
     elif orden == 'precio_desc':
-        sql += ' ORDER BY COALESCE(NULLIF(ps.precio_venta2,0), ps.precio_venta) DESC'
-    
-    # Agregar paginación si se especifica
+        sql += ' ORDER BY p.precio_venta DESC'
+
     if por_pagina:
         offset = (pagina - 1) * por_pagina
         sql += f' LIMIT {por_pagina} OFFSET {offset}'
-    
+
     cursor.execute(sql, params)
-    productos = cursor.fetchall()
-    
-    # Verificar imágenes de productos y enviar notificaciones si es necesario
-    for producto in productos:
-        codigo_barras = producto['cbarras'] if 'cbarras' in producto else ''
-        nombre_producto = producto['nombre_producto'] if 'nombre_producto' in producto else ''
-        if codigo_barras:
-            # Verificar imagen del producto en background
-            verificar_imagen_producto(codigo_barras, nombre_producto)
-    
+    productos_raw = cursor.fetchall()
+
+    # Obtener precios escalonados para todos los productos de una vez
+    product_ids = [p['producto_id'] for p in productos_raw if p.get('producto_id')]
+    precios_map = {}
+    if product_ids:
+        placeholders = ','.join(['%s'] * len(product_ids))
+        cursor.execute(f'''
+            SELECT producto_id, precio, cantidad_minima, nombre
+            FROM precios_escalonados
+            WHERE producto_id IN ({placeholders}) AND activo = 1
+            ORDER BY producto_id, cantidad_minima ASC
+        ''', product_ids)
+        for pe in cursor.fetchall():
+            pid = pe['producto_id']
+            if pid not in precios_map:
+                precios_map[pid] = []
+            precios_map[pid].append(pe)
+
+    # Enriquecer productos con precios escalonados (compatibilidad)
+    productos = []
+    for p in productos_raw:
+        pid = p.get('producto_id')
+        escalados = precios_map.get(pid, [])
+
+        # precio_venta2 / dCantMinPP2 = primer precio escalonado
+        if len(escalados) >= 1:
+            p['precio_venta2'] = float(escalados[0]['precio'])
+            p['dCantMinPP2'] = float(escalados[0]['cantidad_minima'])
+        else:
+            p['precio_venta2'] = 0
+            p['dCantMinPP2'] = 0
+
+        # precio_venta3 / dCantMinPP3 = segundo precio escalonado
+        if len(escalados) >= 2:
+            p['precio_venta3'] = float(escalados[1]['precio'])
+            p['dCantMinPP3'] = float(escalados[1]['cantidad_minima'])
+        else:
+            p['precio_venta3'] = 0
+            p['dCantMinPP3'] = 0
+
+        # Asegurar tipos correctos
+        p['precio_venta'] = float(p['precio_venta'])
+        p['existencia'] = float(p['existencia'])
+        p['puntos_lealtad'] = p['puntos_lealtad'] or 0
+
+        productos.append(p)
+
     cursor.close()
     conn.close()
     return productos
 
+
+# ---------------------------------------------------------------------------
+# CONTAR PRODUCTOS
+# ---------------------------------------------------------------------------
 def contar_productos_sucursal(
-    sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549',
+    sucursal_uuid=None,
     departamento=None,
     categoria=None,
     query=None
 ):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
     sql = '''
         SELECT COUNT(*)
-        FROM producto p
-        JOIN producto_sucursal ps ON p.uuid_producto = ps.uuid_producto
-        LEFT JOIN departamento d ON p.uuid_departamento = d.uuid_departamento
-        LEFT JOIN categoria c ON p.uuid_categoria = c.uuid_categoria
-        WHERE ps.uuid_sucursal = %s
-          AND ps.existencia >= 1
-          AND p.is_active = 1
-          AND ps.is_active = 1
+        FROM productos p
+        LEFT JOIN departamentos d ON p.departamento_id = d.id
+        LEFT JOIN categorias c    ON p.categoria_id = c.id
+        WHERE p.stock >= 1
+          AND p.activo = 1
     '''
-    params = [sucursal_uuid]
-    
-    # Lógica especial para "ofertas" - productos con descuento
-    if categoria == 'ofertas':
-        sql += ' AND ps.precio_venta2 > 0 AND ps.precio_venta2 < ps.precio_venta'
+    params = []
+
+    if categoria and categoria.lower() == 'ofertas':
+        sql += ''' AND EXISTS (
+            SELECT 1 FROM precios_escalonados pe
+            WHERE pe.producto_id = p.id AND pe.activo = 1 AND pe.precio < p.precio_venta
+        )'''
     elif departamento:
-        sql += ' AND d.nombre_dep = %s'
+        sql += ' AND d.nombre = %s'
         params.append(departamento)
     elif categoria:
-        sql += ' AND c.nombre_categoria = %s'
+        sql += ' AND c.nombre = %s'
         params.append(categoria)
-    
+
     if query:
-        sql += ' AND (LOWER(p.nombre_producto) LIKE %s OR LOWER(c.nombre_categoria) LIKE %s OR LOWER(d.nombre_dep) LIKE %s)'
+        sql += ' AND (LOWER(p.nombre) LIKE %s OR LOWER(c.nombre) LIKE %s OR LOWER(d.nombre) LIKE %s)'
         palabra = f"%{query.strip().lower()}%"
         params.extend([palabra, palabra, palabra])
-    
+
     cursor.execute(sql, params)
     total = cursor.fetchone()[0]
-    
+
     cursor.close()
     conn.close()
     return total
 
 
+# ---------------------------------------------------------------------------
+# DEPARTAMENTOS Y CATEGORÍAS
+# ---------------------------------------------------------------------------
 def obtener_departamentos():
-    """
-    Obtiene la lista de departamentos únicos de la tabla departamento.
-    """
+    """Obtiene departamentos activos."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT nombre_dep FROM departamento ORDER BY nombre_dep")
+        cursor.execute("SELECT nombre FROM departamentos WHERE activo = 1 ORDER BY nombre")
         departamentos = [row[0] for row in cursor.fetchall()]
         cursor.close()
         conn.close()
@@ -426,26 +493,23 @@ def obtener_departamentos():
 
 
 def obtener_categorias(departamento=None):
-    """
-    Obtiene la lista de categorías.
-    Si se proporciona departamento, filtra por ese departamento.
-    """
+    """Obtiene categorías activas, opcionalmente filtradas por departamento."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         if departamento:
             sql = """
-                SELECT DISTINCT c.nombre_categoria 
-                FROM categoria c
-                JOIN departamento d ON c.id_depto = d.id_depto
-                WHERE d.nombre_dep = %s
-                ORDER BY c.nombre_categoria
+                SELECT DISTINCT c.nombre
+                FROM categorias c
+                JOIN departamentos d ON c.departamento_id = d.id
+                WHERE d.nombre = %s AND c.activo = 1
+                ORDER BY c.nombre
             """
             cursor.execute(sql, (departamento,))
         else:
-            cursor.execute("SELECT DISTINCT nombre_categoria FROM categoria ORDER BY nombre_categoria")
-        
+            cursor.execute("SELECT nombre FROM categorias WHERE activo = 1 ORDER BY nombre")
+
         categorias = [row[0] for row in cursor.fetchall()]
         cursor.close()
         conn.close()
@@ -455,30 +519,403 @@ def obtener_categorias(departamento=None):
         return []
 
 
+# ---------------------------------------------------------------------------
+# CONSULTAR PUNTOS DE CLIENTE
+# ---------------------------------------------------------------------------
 def consultar_puntos_cliente(busqueda):
     """
-    Consulta los puntos de un cliente por teléfono, código o ID.
-    Retorna (dict_cliente, None) si encuentra el cliente, o (None, mensaje_error) si no.
+    Consulta puntos de un cliente por teléfono o ID.
+    Retorna (dict_cliente, None) o (None, mensaje_error).
+    Compatible con el formato esperado por app.py (nombre, apellidos, puntos).
     """
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        
+
         query = """
-            SELECT nombre, apellidos, puntos 
-            FROM cliente 
-            WHERE is_active=1 AND (idcliente = %s OR telefono = %s OR vCodigoCliente = %s) 
+            SELECT nombre, apellido AS apellidos, puntos_lealtad AS puntos
+            FROM clientes
+            WHERE activo = 1 AND (id = %s OR telefono = %s)
             LIMIT 1
         """
-        cursor.execute(query, (busqueda, busqueda, busqueda))
+        # Intentar buscar por ID numérico o por teléfono
+        try:
+            busqueda_id = int(busqueda)
+        except (ValueError, TypeError):
+            busqueda_id = 0
+
+        cursor.execute(query, (busqueda_id, busqueda))
         row = cursor.fetchone()
         cursor.close()
         conn.close()
-        
+
         if row:
             return row, None
         else:
             return None, "Cliente no encontrado."
     except Exception as e:
         return None, f"Error al consultar: {e}"
+
+
+# ---------------------------------------------------------------------------
+# FUNCIONES AUXILIARES PARA ADMIN
+# ---------------------------------------------------------------------------
+def obtener_producto_por_codigo(codigo_barras):
+    """Obtiene un producto completo por código de barras."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute('''
+        SELECT
+            p.id, p.codigo, p.codigo_barras AS cbarras, p.nombre AS nombre_producto,
+            p.precio_venta, p.stock AS existencia, p.unidad_medida,
+            p.categoria_id, p.departamento_id, p.imagen_url,
+            p.puntos_lealtad, p.activo,
+            d.nombre AS nombre_departamento, d.nombre AS nombre_dep,
+            c.nombre AS nombre_categoria
+        FROM productos p
+        LEFT JOIN categorias c ON p.categoria_id = c.id
+        LEFT JOIN departamentos d ON p.departamento_id = d.id
+        WHERE p.codigo_barras = %s OR p.codigo = %s
+        LIMIT 1
+    ''', (codigo_barras, codigo_barras))
+    producto = cursor.fetchone()
+
+    if producto:
+        # Agregar precio escalonado
+        cursor.execute('''
+            SELECT precio, cantidad_minima FROM precios_escalonados
+            WHERE producto_id = %s AND activo = 1
+            ORDER BY cantidad_minima ASC LIMIT 1
+        ''', (producto['id'],))
+        pe = cursor.fetchone()
+        producto['precio_venta2'] = float(pe['precio']) if pe else 0
+        producto['dCantMinPP2'] = float(pe['cantidad_minima']) if pe else 0
+
+    cursor.close()
+    conn.close()
+    return producto
+
+
+def obtener_todos_productos_admin(pagina=1, por_pagina=50):
+    """Obtiene productos paginados para el panel admin."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    offset = (pagina - 1) * por_pagina
+
+    cursor.execute('''
+        SELECT
+            p.id, p.codigo_barras AS cbarras, p.nombre AS nombre_producto,
+            p.precio_venta, p.stock AS existencia,
+            d.nombre AS nombre_dep,
+            c.nombre AS nombre_categoria
+        FROM productos p
+        LEFT JOIN categorias c ON p.categoria_id = c.id
+        LEFT JOIN departamentos d ON p.departamento_id = d.id
+        WHERE p.activo = 1
+        ORDER BY p.nombre ASC
+        LIMIT %s OFFSET %s
+    ''', (por_pagina, offset))
+    productos = cursor.fetchall()
+
+    cursor.execute("SELECT COUNT(*) FROM productos WHERE activo = 1")
+    total = cursor.fetchone()['COUNT(*)']
+
+    cursor.close()
+    conn.close()
+    return productos, total
+
+
+def crear_producto_db(datos):
+    """Crea un nuevo producto en la BD."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Verificar si el código de barras ya existe
+        cursor.execute(
+            "SELECT id FROM productos WHERE codigo_barras = %s LIMIT 1",
+            (datos['cbarras'],)
+        )
+        if cursor.fetchone():
+            return None, f"El código de barras {datos['cbarras']} ya existe"
+
+        # Buscar o crear categoría y departamento
+        cat_id = _get_or_create_categoria(cursor, datos.get('nombre_categoria'), datos.get('nombre_dep'))
+        dep_id = _get_or_create_departamento(cursor, datos.get('nombre_dep'))
+
+        sql = """
+            INSERT INTO productos (
+                codigo, codigo_barras, nombre, precio_venta, stock,
+                unidad_medida, categoria_id, departamento_id, imagen_url, activo
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+        """
+        cursor.execute(sql, (
+            datos['cbarras'],  # usar código de barras como código también
+            datos['cbarras'],
+            datos['nombre_producto'],
+            datos['precio_venta'],
+            datos.get('existencia', 0),
+            datos.get('unidad_medida', 'PZA'),
+            cat_id,
+            dep_id,
+            datos.get('imagen')
+        ))
+        producto_id = cursor.lastrowid
+
+        # Crear precio escalonado si hay precio_venta2
+        if datos.get('precio_venta2') and float(datos['precio_venta2']) > 0:
+            cursor.execute("""
+                INSERT INTO precios_escalonados (producto_id, nombre, cantidad_minima, precio, activo)
+                VALUES (%s, 'Precio 2', 1, %s, 1)
+            """, (producto_id, datos['precio_venta2']))
+
+        conn.commit()
+        return producto_id, None
+    except Exception as e:
+        conn.rollback()
+        return None, f"Error al crear producto: {e}"
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def actualizar_producto_db(codigo_barras, datos):
+    """Actualiza un producto existente en la BD."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        # Buscar producto
+        cursor.execute(
+            "SELECT id FROM productos WHERE (codigo_barras = %s OR codigo = %s) LIMIT 1",
+            (codigo_barras, codigo_barras)
+        )
+        prod = cursor.fetchone()
+        if not prod:
+            return False, "Producto no encontrado"
+
+        producto_id = prod['id']
+
+        cat_id = _get_or_create_categoria(cursor, datos.get('nombre_categoria'), datos.get('nombre_dep'))
+        dep_id = _get_or_create_departamento(cursor, datos.get('nombre_dep'))
+
+        sql = """
+            UPDATE productos SET
+                nombre = %s, precio_venta = %s, stock = %s,
+                categoria_id = %s, departamento_id = %s
+            WHERE id = %s
+        """
+        cursor.execute(sql, (
+            datos['nombre_producto'],
+            datos['precio_venta'],
+            datos.get('existencia', 0),
+            cat_id,
+            dep_id,
+            producto_id
+        ))
+
+        # Actualizar o crear precio escalonado
+        precio_venta2 = float(datos.get('precio_venta2', 0))
+        if precio_venta2 > 0:
+            cursor.execute(
+                "SELECT id FROM precios_escalonados WHERE producto_id = %s AND nombre = 'Precio 2' LIMIT 1",
+                (producto_id,)
+            )
+            pe = cursor.fetchone()
+            if pe:
+                cursor.execute(
+                    "UPDATE precios_escalonados SET precio = %s, activo = 1 WHERE id = %s",
+                    (precio_venta2, pe['id'])
+                )
+            else:
+                cursor.execute("""
+                    INSERT INTO precios_escalonados (producto_id, nombre, cantidad_minima, precio, activo)
+                    VALUES (%s, 'Precio 2', 1, %s, 1)
+                """, (producto_id, precio_venta2))
+        else:
+            # Desactivar precio escalonado si no hay
+            cursor.execute(
+                "UPDATE precios_escalonados SET activo = 0 WHERE producto_id = %s AND nombre = 'Precio 2'",
+                (producto_id,)
+            )
+
+        # Actualizar imagen si se proporciona
+        if datos.get('imagen'):
+            cursor.execute(
+                "UPDATE productos SET imagen_url = %s WHERE id = %s",
+                (datos['imagen'], producto_id)
+            )
+
+        conn.commit()
+        return True, None
+    except Exception as e:
+        conn.rollback()
+        return False, f"Error al actualizar: {e}"
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def eliminar_producto_db(codigo_barras):
+    """Desactiva un producto (soft delete)."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE productos SET activo = 0 WHERE codigo_barras = %s OR codigo = %s",
+            (codigo_barras, codigo_barras)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        print(f"Error al eliminar producto: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def obtener_productos_bajo_stock(limite=5):
+    """Obtiene productos con stock menor al límite."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute('''
+        SELECT
+            p.codigo_barras AS cbarras, p.nombre AS nombre_producto,
+            p.precio_venta, p.stock AS existencia,
+            d.nombre AS nombre_dep, c.nombre AS nombre_categoria
+        FROM productos p
+        LEFT JOIN categorias c ON p.categoria_id = c.id
+        LEFT JOIN departamentos d ON p.departamento_id = d.id
+        WHERE p.activo = 1 AND p.stock < %s AND p.stock > 0
+        ORDER BY p.stock ASC
+    ''', (limite,))
+    productos = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return productos
+
+
+def obtener_estadisticas_admin():
+    """Obtiene estadísticas para el dashboard admin."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    stats = {}
+
+    cursor.execute("SELECT COUNT(*) AS total FROM productos WHERE activo = 1")
+    stats['total_productos'] = cursor.fetchone()['total']
+
+    cursor.execute("SELECT COUNT(*) AS total FROM clientes WHERE activo = 1")
+    stats['total_clientes'] = cursor.fetchone()['total']
+
+    cursor.execute("SELECT COUNT(*) AS total FROM pedidos_online WHERE estado = 'Pendiente'")
+    stats['pedidos_pendientes'] = cursor.fetchone()['total']
+
+    cursor.execute("""
+        SELECT COALESCE(SUM(total), 0) AS total_ventas
+        FROM ventas
+        WHERE estado = 'Completada'
+          AND MONTH(fecha_venta) = MONTH(CURDATE())
+          AND YEAR(fecha_venta) = YEAR(CURDATE())
+    """)
+    stats['ventas_mes'] = float(cursor.fetchone()['total_ventas'])
+
+    cursor.execute("""
+        SELECT numero_pedido AS id, cliente_nombre AS nombre,
+               DATE_FORMAT(fecha_pedido, '%%d/%%m/%%Y %%H:%%i') AS fecha,
+               total, estado
+        FROM pedidos_online
+        ORDER BY fecha_pedido DESC LIMIT 5
+    """)
+    stats['ultimos_pedidos'] = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    return stats
+
+
+def obtener_pedidos_admin():
+    """Obtiene todos los pedidos online para el admin."""
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id, numero_pedido, cliente_nombre AS nombre,
+               cliente_telefono AS telefono,
+               direccion, metodo_pago,
+               DATE_FORMAT(fecha_pedido, '%%d/%%m/%%Y %%H:%%i') AS fecha,
+               total, estado
+        FROM pedidos_online
+        ORDER BY fecha_pedido DESC
+    """)
+    pedidos = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return pedidos
+
+
+def actualizar_estado_pedido(pedido_id, nuevo_estado):
+    """Actualiza el estado de un pedido online."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        if nuevo_estado in ('En proceso', 'Enviado', 'Entregado'):
+            cursor.execute(
+                "UPDATE pedidos_online SET estado = %s, fecha_procesado = NOW() WHERE id = %s OR numero_pedido = %s",
+                (nuevo_estado, pedido_id, pedido_id)
+            )
+        else:
+            cursor.execute(
+                "UPDATE pedidos_online SET estado = %s WHERE id = %s OR numero_pedido = %s",
+                (nuevo_estado, pedido_id, pedido_id)
+            )
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        conn.rollback()
+        print(f"Error actualizando estado: {e}")
+        return False
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# HELPERS PRIVADOS
+# ---------------------------------------------------------------------------
+def _get_or_create_departamento(cursor, nombre_dep):
+    """Busca o crea un departamento, retorna su ID."""
+    if not nombre_dep:
+        return None
+    cursor.execute("SELECT id FROM departamentos WHERE nombre = %s LIMIT 1", (nombre_dep,))
+    row = cursor.fetchone()
+    if row:
+        return row['id']
+    cursor.execute("INSERT INTO departamentos (nombre, activo) VALUES (%s, 1)", (nombre_dep,))
+    return cursor.lastrowid
+
+
+def _get_or_create_categoria(cursor, nombre_cat, nombre_dep=None):
+    """Busca o crea una categoría, retorna su ID."""
+    if not nombre_cat:
+        return None
+
+    dep_id = _get_or_create_departamento(cursor, nombre_dep) if nombre_dep else None
+
+    if dep_id:
+        cursor.execute(
+            "SELECT id FROM categorias WHERE nombre = %s AND departamento_id = %s LIMIT 1",
+            (nombre_cat, dep_id)
+        )
+    else:
+        cursor.execute("SELECT id FROM categorias WHERE nombre = %s LIMIT 1", (nombre_cat,))
+    row = cursor.fetchone()
+    if row:
+        return row['id']
+
+    cursor.execute(
+        "INSERT INTO categorias (nombre, departamento_id, activo) VALUES (%s, %s, 1)",
+        (nombre_cat, dep_id)
+    )
+    return cursor.lastrowid
 

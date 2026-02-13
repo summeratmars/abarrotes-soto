@@ -67,6 +67,20 @@ except AttributeError:
     def consultar_puntos_cliente(busqueda):
         return None, "Función no disponible"
 
+# Funciones auxiliares de admin (nuevas para BD azula_pdv)
+try:
+    obtener_producto_por_codigo = db.obtener_producto_por_codigo
+    obtener_todos_productos_admin = db.obtener_todos_productos_admin
+    crear_producto_db = db.crear_producto_db
+    actualizar_producto_db = db.actualizar_producto_db
+    eliminar_producto_db = db.eliminar_producto_db
+    obtener_productos_bajo_stock = db.obtener_productos_bajo_stock
+    obtener_estadisticas_admin = db.obtener_estadisticas_admin
+    obtener_pedidos_admin = db.obtener_pedidos_admin
+    actualizar_estado_pedido = db.actualizar_estado_pedido
+except AttributeError:
+    pass
+
 __all__ = [
     'get_db_connection',
     'obtener_productos_sucursal',
@@ -77,5 +91,14 @@ __all__ = [
     'obtener_departamentos',
     'obtener_categorias',
     'consultar_puntos_cliente',
-    'usar_api_rest'
+    'usar_api_rest',
+    'obtener_producto_por_codigo',
+    'obtener_todos_productos_admin',
+    'crear_producto_db',
+    'actualizar_producto_db',
+    'eliminar_producto_db',
+    'obtener_productos_bajo_stock',
+    'obtener_estadisticas_admin',
+    'obtener_pedidos_admin',
+    'actualizar_estado_pedido',
 ]

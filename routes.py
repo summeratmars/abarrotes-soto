@@ -178,15 +178,28 @@ def api_buscar_cliente():
         if not re.match(r'^\d{10}$', telefono):
             return jsonify({'success': False, 'error': 'El teléfono debe tener 10 dígitos'}), 400
         
-        cliente = obtener_cliente_por_telefono(telefono)
+        # Buscar cliente en la tabla clientes de azula_pdv
+        from db_config import get_db_connection
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT id, nombre, apellido, telefono, puntos_lealtad
+            FROM clientes
+            WHERE telefono = %s AND activo = 1
+            LIMIT 1
+        """, (telefono,))
+        cliente = cursor.fetchone()
+        cursor.close()
+        conn.close()
         
         if cliente:
+            codigo_cliente = f"CLI{cliente['id']:05d}"
             return jsonify({
                 'success': True,
                 'cliente': {
-                    'idcliente': cliente['idcliente'],
-                    'vCodigoCliente': cliente['vCodigoCliente'],
-                    'nombre_completo': f"{cliente['nombre']} {cliente['apellidos']}".strip(),
+                    'idcliente': cliente['id'],
+                    'vCodigoCliente': codigo_cliente,
+                    'nombre_completo': f"{cliente['nombre']} {cliente.get('apellido', '')}".strip(),
                     'puntos_lealtad': cliente['puntos_lealtad'] or 0,
                     'telefono': cliente['telefono']
                 }

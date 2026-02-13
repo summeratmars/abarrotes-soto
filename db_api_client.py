@@ -52,8 +52,11 @@ def _make_request(method: str, endpoint: str, **kwargs) -> Dict[Any, Any]:
     Función auxiliar para realizar peticiones HTTP a la API
     """
     url = f"{API_BASE_URL}{endpoint}"
+    # Header necesario para evitar la página de advertencia de ngrok free
+    headers = kwargs.pop('headers', {})
+    headers['ngrok-skip-browser-warning'] = 'true'
     try:
-        response = requests.request(method, url, timeout=30, **kwargs)
+        response = requests.request(method, url, timeout=30, headers=headers, **kwargs)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.Timeout:
@@ -87,7 +90,7 @@ def get_db_connection():
         return None
 
 def obtener_productos_sucursal(
-    sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549',
+    sucursal_uuid=None,  # ignorado en nueva BD
     departamento: Optional[str] = None,
     categoria: Optional[str] = None,
     query: Optional[str] = None,
@@ -113,7 +116,6 @@ def obtener_productos_sucursal(
             return _cache_productos[cache_key]
     
     params = {
-        'sucursal_uuid': sucursal_uuid,
         'pagina': pagina
     }
     
@@ -157,7 +159,7 @@ def obtener_productos_sucursal(
         return []
 
 def contar_productos_sucursal(
-    sucursal_uuid='22C8131D-4431-4E9A-AA04-ED188217C549',
+    sucursal_uuid=None,  # ignorado en nueva BD
     departamento: Optional[str] = None,
     categoria: Optional[str] = None,
     query: Optional[str] = None
@@ -165,7 +167,7 @@ def contar_productos_sucursal(
     """
     Cuenta productos según filtros mediante la API REST
     """
-    params = {'sucursal_uuid': sucursal_uuid}
+    params = {}
     
     if departamento:
         params['departamento'] = departamento
@@ -199,7 +201,7 @@ def guardar_cotizacion_web(carrito: List[Dict], observaciones: str = "Generado p
 def registrar_cliente_monedero(
     nombre_completo: str,
     telefono: str,
-    sucursal_uuid: str = '22C8131D-4431-4E9A-AA04-ED188217C549'
+    sucursal_uuid: str = None  # ignorado en nueva BD
 ):
     """
     Registra un cliente en el sistema de monedero mediante la API REST
@@ -207,8 +209,7 @@ def registrar_cliente_monedero(
     try:
         payload = {
             'nombre_completo': nombre_completo,
-            'telefono': telefono,
-            'sucursal_uuid': sucursal_uuid
+            'telefono': telefono
         }
         response = _make_request('POST', '/api/cliente/monedero', json=payload)
         return response, None
@@ -278,3 +279,123 @@ def obtener_categorias(departamento: Optional[str] = None) -> List[str]:
     except APIConnectionError as e:
         print(f"❌ Error al obtener categorías: {e}")
         return []
+
+
+# ---------------------------------------------------------------------------
+# FUNCIONES ADMIN (via API REST)
+# ---------------------------------------------------------------------------
+def obtener_producto_por_codigo(codigo_barras: str) -> Optional[Dict]:
+    """Obtiene un producto completo por código de barras via API"""
+    try:
+        response = _make_request('GET', f'/api/admin/producto/{codigo_barras}')
+        return response
+    except APIConnectionError as e:
+        print(f"❌ Error al obtener producto: {e}")
+        return None
+
+
+def obtener_todos_productos_admin(pagina: int = 1, por_pagina: int = 50):
+    """Obtiene productos paginados para el panel admin via API"""
+    try:
+        response = _make_request('GET', '/api/admin/productos', params={
+            'pagina': pagina, 'por_pagina': por_pagina
+        })
+        return response.get('productos', []), response.get('total', 0)
+    except APIConnectionError as e:
+        print(f"❌ Error al obtener productos admin: {e}")
+        return [], 0
+
+
+def crear_producto_db(datos: Dict):
+    """Crea un nuevo producto via API"""
+    try:
+        payload = {
+            'cbarras': datos.get('cbarras', ''),
+            'nombre_producto': datos.get('nombre_producto', ''),
+            'precio_venta': float(datos.get('precio_venta', 0)),
+            'existencia': float(datos.get('existencia', 0)),
+            'nombre_categoria': datos.get('nombre_categoria'),
+            'nombre_dep': datos.get('nombre_dep'),
+            'unidad_medida': datos.get('unidad_medida', 'PZA'),
+            'precio_venta2': float(datos.get('precio_venta2', 0)),
+            'imagen': datos.get('imagen')
+        }
+        response = _make_request('POST', '/api/admin/producto', json=payload)
+        return response.get('producto_id'), None
+    except APIConnectionError as e:
+        return None, str(e)
+
+
+def actualizar_producto_db(codigo_barras: str, datos: Dict):
+    """Actualiza un producto existente via API"""
+    try:
+        payload = {
+            'cbarras': datos.get('cbarras', codigo_barras),
+            'nombre_producto': datos.get('nombre_producto', ''),
+            'precio_venta': float(datos.get('precio_venta', 0)),
+            'existencia': float(datos.get('existencia', 0)),
+            'nombre_categoria': datos.get('nombre_categoria'),
+            'nombre_dep': datos.get('nombre_dep'),
+            'unidad_medida': datos.get('unidad_medida', 'PZA'),
+            'precio_venta2': float(datos.get('precio_venta2', 0)),
+            'imagen': datos.get('imagen')
+        }
+        response = _make_request('PUT', f'/api/admin/producto/{codigo_barras}', json=payload)
+        return response.get('success', False), None
+    except APIConnectionError as e:
+        return False, str(e)
+
+
+def eliminar_producto_db(codigo_barras: str) -> bool:
+    """Desactiva un producto via API"""
+    try:
+        response = _make_request('DELETE', f'/api/admin/producto/{codigo_barras}')
+        return response.get('success', False)
+    except APIConnectionError as e:
+        print(f"❌ Error al eliminar producto: {e}")
+        return False
+
+
+def obtener_productos_bajo_stock(limite: int = 5) -> List[Dict]:
+    """Obtiene productos con stock bajo via API"""
+    try:
+        response = _make_request('GET', '/api/admin/productos/bajo-stock', params={'limite': limite})
+        return response.get('productos', [])
+    except APIConnectionError as e:
+        print(f"❌ Error al obtener productos bajo stock: {e}")
+        return []
+
+
+def obtener_estadisticas_admin() -> Dict:
+    """Obtiene estadísticas para el dashboard admin via API"""
+    try:
+        response = _make_request('GET', '/api/admin/estadisticas')
+        return response
+    except APIConnectionError as e:
+        print(f"❌ Error al obtener estadísticas: {e}")
+        return {
+            'total_productos': 0, 'total_clientes': 0,
+            'pedidos_pendientes': 0, 'ventas_mes': 0,
+            'ultimos_pedidos': []
+        }
+
+
+def obtener_pedidos_admin() -> List[Dict]:
+    """Obtiene todos los pedidos online para admin via API"""
+    try:
+        response = _make_request('GET', '/api/admin/pedidos')
+        return response.get('pedidos', [])
+    except APIConnectionError as e:
+        print(f"❌ Error al obtener pedidos: {e}")
+        return []
+
+
+def actualizar_estado_pedido(pedido_id, nuevo_estado: str) -> bool:
+    """Actualiza el estado de un pedido via API"""
+    try:
+        response = _make_request('PUT', f'/api/admin/pedido/{pedido_id}/estado',
+                                  json={'nuevo_estado': nuevo_estado})
+        return response.get('success', False)
+    except APIConnectionError as e:
+        print(f"❌ Error al actualizar estado: {e}")
+        return False

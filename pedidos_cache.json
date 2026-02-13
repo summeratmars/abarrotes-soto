@@ -1,0 +1,34 @@
+{
+  "orders": {
+    "WEB-000001": {
+      "nombre": "EFREN SOTO",
+      "direccion": "Portal Del Cielo 44",
+      "colonia": "VILLAS CHALCO",
+      "telefono": "5575251742",
+      "numero_cliente": "",
+      "horario_entrega": "Lo antes posible",
+      "pago": "Efectivo",
+      "info_pago": "Efectivo - Pago justo",
+      "pago_efectivo_cambio": "no",
+      "pago_efectivo_monto": "",
+      "carrito": [
+        {
+          "cbarras": "7501030418412",
+          "nombre": "LECHE NITO 236ML",
+          "precio": 18,
+          "precio_original": 18,
+          "precio_mayoreo": 0,
+          "cantidad_mayoreo": 0,
+          "precio_base": 18,
+          "cantidad": 8,
+          "puntos": 0
+        }
+      ],
+      "total": 144,
+      "ahorro": 0,
+      "folio": "WEB-000001",
+      "created_at": "12/02/2026 19:52"
+    }
+  },
+  "mp_preference_map": {}
+}

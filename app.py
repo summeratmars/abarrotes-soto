@@ -800,88 +800,50 @@ def admin_login():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    # Cargar datos actualizados
-    df_actual = pd.read_excel("productos.xlsx")
+    # Obtener estadísticas desde la BD azula_pdv
+    from db_config import obtener_estadisticas_admin, obtener_productos_bajo_stock
+    try:
+        stats = obtener_estadisticas_admin()
+        productos_bajo_stock = obtener_productos_bajo_stock(5)
 
-    # Estadísticas para el dashboard
-    total_productos = len(df_actual)
+        # Formatear últimos pedidos para la plantilla
+        ultimos_pedidos = []
+        for p in stats.get('ultimos_pedidos', []):
+            ultimos_pedidos.append({
+                "cliente": p.get('nombre', 'N/A'),
+                "fecha": p.get('fecha', ''),
+                "total": str(p.get('total', 0)),
+                "estado": p.get('estado', 'Pendiente')
+            })
 
-    # Leer clientes desde el archivo CSV
-    total_clientes = 0
-    if os.path.exists("clientes.csv"):
-        with open("clientes.csv", 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            # Restar 1 si hay encabezado
-            total_clientes = sum(1 for row in reader) - 1
-            if total_clientes < 0:
-                total_clientes = 0
-
-    # Obtener pedidos pendientes y últimos pedidos
-    pedidos_pendientes = 0
-    ultimos_pedidos = []
-    ventas_totales = 0
-
-    if os.path.exists("pedidos.csv"):
-        with open("pedidos.csv", "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            pedidos = list(reader)
-
-            # Contar pedidos pendientes
-            pedidos_pendientes = sum(1 for p in pedidos if p["estado"] == "Pendiente")
-
-            # Obtener los últimos 5 pedidos
-            ultimos_pedidos = sorted(pedidos, key=lambda x: x["fecha"], reverse=True)[:5]
-            ultimos_pedidos = [{
-                "cliente": p["nombre"],
-                "fecha": p["fecha"],
-                "total": p["total"],
-                "estado": p["estado"]
-            } for p in ultimos_pedidos]
-
-            # Calcular ventas totales (solo pedidos entregados)
-            for p in pedidos:
-                if p["estado"] == "Entregado":
-                    try:
-                        ventas_totales += float(p["total"])
-                    except (ValueError, TypeError):
-                        pass
-
-    # Formatear ventas del mes
-    ventas_mes = f"{ventas_totales:.2f}"
-
-    # Productos con bajo stock (menos de 5 unidades)
-    productos_bajo_stock = df_actual[df_actual['existencia'] < 5].to_dict(orient='records')
-
-    return render_template('admin.html', 
-                           total_productos=total_productos,
-                           total_clientes=total_clientes,
-                           pedidos_pendientes=pedidos_pendientes,
-                           ventas_mes=ventas_mes,
-                           productos_bajo_stock=productos_bajo_stock,
-                           ultimos_pedidos=ultimos_pedidos)
+        return render_template('admin.html',
+                               total_productos=stats['total_productos'],
+                               total_clientes=stats['total_clientes'],
+                               pedidos_pendientes=stats['pedidos_pendientes'],
+                               ventas_mes=f"{stats['ventas_mes']:.2f}",
+                               productos_bajo_stock=productos_bajo_stock,
+                               ultimos_pedidos=ultimos_pedidos)
+    except Exception as e:
+        print(f"❌ Error en dashboard: {e}")
+        return render_template('admin.html',
+                               total_productos=0, total_clientes=0,
+                               pedidos_pendientes=0, ventas_mes="0.00",
+                               productos_bajo_stock=[], ultimos_pedidos=[])
 
 @app.route('/admin/productos')
 @admin_required
 def admin_productos():
-    # Cargar datos actualizados
-    df_actual = pd.read_excel("productos.xlsx")
-
-    # Paginación
+    from db_config import obtener_todos_productos_admin, obtener_departamentos, obtener_categorias
     pagina_actual = int(request.args.get('pagina', 1))
     productos_por_pagina = 50
-    total_productos = len(df_actual)
+
+    productos_pagina, total_productos = obtener_todos_productos_admin(pagina_actual, productos_por_pagina)
     total_paginas = (total_productos + productos_por_pagina - 1) // productos_por_pagina
 
-    # Obtener productos para la página actual
-    inicio = (pagina_actual - 1) * productos_por_pagina
-    fin = inicio + productos_por_pagina
-    productos_pagina = df_actual.iloc[inicio:fin].to_dict(orient='records')
+    categorias = obtener_categorias()
+    departamentos = obtener_departamentos()
 
-    # Obtener categorías y departamentos únicos para los filtros
-    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
-    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
-
-    return render_template('admin_productos.html', 
+    return render_template('admin_productos.html',
                            productos=productos_pagina,
                            categorias=categorias,
                            departamentos=departamentos,
@@ -891,71 +853,48 @@ def admin_productos():
 @app.route('/admin/productos/nuevo', methods=['GET', 'POST'])
 @admin_required
 def admin_producto_nuevo():
-    global df
-    df_actual = pd.read_excel("productos.xlsx")
-
-    # Obtener categorías y departamentos únicos
-    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
-    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
+    from db_config import obtener_departamentos, obtener_categorias, crear_producto_db
+    categorias = obtener_categorias()
+    departamentos = obtener_departamentos()
 
     if request.method == 'POST':
         try:
-            # Obtener datos del formulario
             cbarras = request.form.get('cbarras')
             nombre_producto = request.form.get('nombre_producto')
 
             # Manejo de categoría
             if request.form.get('nombre_categoria') == 'nueva':
                 nombre_categoria = request.form.get('nueva_categoria')
-                if nombre_categoria not in categorias:
-                    categorias.append(nombre_categoria)
             else:
                 nombre_categoria = request.form.get('nombre_categoria')
 
             # Manejo de departamento
             if request.form.get('nombre_dep') == 'nuevo':
                 nombre_dep = request.form.get('nuevo_departamento')
-                if nombre_dep not in departamentos:
-                    departamentos.append(nombre_dep)
             else:
                 nombre_dep = request.form.get('nombre_dep')
 
             precio_venta = float(request.form.get('precio_venta'))
             precio_venta2 = request.form.get('precio_venta2')
             precio_venta2 = float(precio_venta2) if precio_venta2 else 0.0
-            # Convertir primero a float y luego a int para manejar valores como '1.0'
             existencia = int(float(request.form.get('existencia')))
 
-            # Manejar imagen si se proporciona
+            # Manejar imagen
             imagen_filename = None
             if 'imagen' in request.files and request.files['imagen'].filename:
                 imagen = request.files['imagen']
                 if allowed_file(imagen.filename):
-                    # Usar el código de barras como nombre de archivo
                     extension = os.path.splitext(imagen.filename)[1]
                     imagen_filename = f"{cbarras}{extension}"
                     imagen_path = os.path.join(app.config['UPLOAD_FOLDER'], imagen_filename)
-
-                    # Si existe una imagen previa con el mismo nombre, eliminarla
                     if os.path.exists(imagen_path):
                         try:
                             os.remove(imagen_path)
                         except Exception as e:
                             print(f"Error al eliminar imagen previa: {e}")
-
                     imagen.save(imagen_path)
 
-            # Verificar si el código de barras ya existe
-            if cbarras in df_actual['cbarras'].values:
-                return render_template('admin_producto_form.html', 
-                                       error=True,
-                                       mensaje=f"El código de barras {cbarras} ya existe",
-                                       producto=None,
-                                       categorias=categorias,
-                                       departamentos=departamentos)
-
-            # Crear nuevo producto como diccionario
-            nuevo_producto = {
+            datos = {
                 'cbarras': cbarras,
                 'nombre_producto': nombre_producto,
                 'nombre_categoria': nombre_categoria,
@@ -966,26 +905,25 @@ def admin_producto_nuevo():
                 'imagen': imagen_filename
             }
 
-            # Agregar el nuevo producto al DataFrame
-            df_actual = pd.concat([df_actual, pd.DataFrame([nuevo_producto])], ignore_index=True)
-
-            # Guardar cambios
-            df_actual.to_excel("productos.xlsx", index=False)
-
-            # Actualizar el DataFrame global
-            df = df_actual
+            producto_id, error = crear_producto_db(datos)
+            if error:
+                return render_template('admin_producto_form.html',
+                                       error=True, mensaje=error,
+                                       producto=None,
+                                       categorias=categorias,
+                                       departamentos=departamentos)
 
             return redirect(url_for('admin_productos'))
 
         except Exception as e:
-            return render_template('admin_producto_form.html', 
+            return render_template('admin_producto_form.html',
                                    error=True,
                                    mensaje=f"Error al crear producto: {str(e)}",
                                    producto=None,
                                    categorias=categorias,
                                    departamentos=departamentos)
 
-    return render_template('admin_producto_form.html', 
+    return render_template('admin_producto_form.html',
                            producto=None,
                            categorias=categorias,
                            departamentos=departamentos)
@@ -993,99 +931,78 @@ def admin_producto_nuevo():
 @app.route('/admin/productos/editar/<cbarras>', methods=['GET', 'POST'])
 @admin_required
 def admin_producto_editar(cbarras):
-    global df
-    df_actual = pd.read_excel("productos.xlsx")
+    from db_config import obtener_producto_por_codigo, obtener_departamentos, obtener_categorias, actualizar_producto_db
 
-    # Buscar el producto por código de barras
-    producto = None
-    for _, row in df_actual.iterrows():
-        if str(row['cbarras']) == str(cbarras):
-            producto = row.to_dict()
-            break
-
+    producto = obtener_producto_por_codigo(cbarras)
     if not producto:
         return redirect(url_for('admin_productos'))
 
-    # Obtener categorías y departamentos únicos
-    categorias = sorted(df_actual['nombre_categoria'].dropna().unique())
-    departamentos = sorted(df_actual['nombre_dep'].dropna().unique())
+    categorias = obtener_categorias()
+    departamentos = obtener_departamentos()
 
     if request.method == 'POST':
         try:
-            # Obtener datos del formulario
             nombre_producto = request.form.get('nombre_producto')
 
-            # Manejo de categoría
             if request.form.get('nombre_categoria') == 'nueva':
                 nombre_categoria = request.form.get('nueva_categoria')
-                if nombre_categoria not in categorias:
-                    categorias.append(nombre_categoria)
             else:
                 nombre_categoria = request.form.get('nombre_categoria')
 
-            # Manejo de departamento
             if request.form.get('nombre_dep') == 'nuevo':
                 nombre_dep = request.form.get('nuevo_departamento')
-                if nombre_dep not in departamentos:
-                    departamentos.append(nombre_dep)
             else:
                 nombre_dep = request.form.get('nombre_dep')
 
             precio_venta = float(request.form.get('precio_venta'))
             precio_venta2 = request.form.get('precio_venta2')
             precio_venta2 = float(precio_venta2) if precio_venta2 and precio_venta2.strip() else 0.0
-            # Convertir primero a float y luego a int para manejar valores como '1.0'
             existencia = int(float(request.form.get('existencia')))
 
-            # Manejar imagen si se proporciona
-            imagen_filename = producto.get('imagen')
+            # Manejar imagen
+            imagen_filename = None
             if 'imagen' in request.files and request.files['imagen'].filename:
                 imagen = request.files['imagen']
                 if allowed_file(imagen.filename):
-                    # Usar el código de barras como nombre de archivo
                     extension = os.path.splitext(imagen.filename)[1]
                     imagen_filename = f"{cbarras}{extension}"
                     imagen_path = os.path.join(app.config['UPLOAD_FOLDER'], imagen_filename)
-
-                    # Si existe una imagen previa con el mismo nombre, eliminarla
                     if os.path.exists(imagen_path):
                         try:
                             os.remove(imagen_path)
                         except Exception as e:
                             print(f"Error al eliminar imagen previa: {e}")
-
                     imagen.save(imagen_path)
 
-            # Actualizar el DataFrame
-            for i, row in df_actual.iterrows():
-                if str(row['cbarras']) == str(cbarras):
-                    df_actual.at[i, 'nombre_producto'] = nombre_producto
-                    df_actual.at[i, 'nombre_categoria'] = nombre_categoria
-                    df_actual.at[i, 'nombre_dep'] = nombre_dep
-                    df_actual.at[i, 'precio_venta'] = precio_venta
-                    df_actual.at[i, 'precio_venta2'] = precio_venta2
-                    df_actual.at[i, 'existencia'] = existencia
-                    if imagen_filename:
-                        df_actual.at[i, 'imagen'] = imagen_filename
-                    break
+            datos = {
+                'nombre_producto': nombre_producto,
+                'nombre_categoria': nombre_categoria,
+                'nombre_dep': nombre_dep,
+                'precio_venta': precio_venta,
+                'precio_venta2': precio_venta2,
+                'existencia': existencia,
+                'imagen': imagen_filename
+            }
 
-            # Guardar cambios
-            df_actual.to_excel("productos.xlsx", index=False)
-
-            # Actualizar el DataFrame global
-            df = df_actual
+            ok, error = actualizar_producto_db(cbarras, datos)
+            if not ok:
+                return render_template('admin_producto_form.html',
+                                       error=True, mensaje=error,
+                                       producto=producto,
+                                       categorias=categorias,
+                                       departamentos=departamentos)
 
             return redirect(url_for('admin_productos'))
 
         except Exception as e:
-            return render_template('admin_producto_form.html', 
+            return render_template('admin_producto_form.html',
                                    error=True,
                                    mensaje=f"Error al actualizar producto: {str(e)}",
                                    producto=producto,
                                    categorias=categorias,
                                    departamentos=departamentos)
 
-    return render_template('admin_producto_form.html', 
+    return render_template('admin_producto_form.html',
                            producto=producto,
                            categorias=categorias,
                            departamentos=departamentos)
@@ -1093,118 +1010,74 @@ def admin_producto_editar(cbarras):
 @app.route('/admin/productos/eliminar/<cbarras>')
 @admin_required
 def admin_producto_eliminar(cbarras):
-    global df
-    df_actual = pd.read_excel("productos.xlsx")
-
-    # Filtrar el DataFrame para eliminar el producto
-    df_nuevo = df_actual[df_actual['cbarras'].astype(str) != str(cbarras)]
-
-    # Si el tamaño cambió, significa que se eliminó un producto
-    if len(df_nuevo) < len(df_actual):
-        # Guardar cambios
-        df_nuevo.to_excel("productos.xlsx", index=False)
-
-        # Actualizar el DataFrame global
-        df = df_nuevo
-
+    from db_config import eliminar_producto_db
+    eliminar_producto_db(cbarras)
     return redirect(url_for('admin_productos'))
 
 @app.route('/admin/pedidos')
 @admin_required
 def admin_pedidos():
-    # Verificar si existe el archivo de pedidos
-    if not os.path.exists("pedidos.csv"):
-        # Crear archivo con encabezados si no existe
-        with open("pedidos.csv", "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["id", "fecha", "nombre", "direccion", "colonia", "telefono", "metodo_pago", "total", "estado"])
+    from db_config import obtener_pedidos_admin
+    try:
+        pedidos = obtener_pedidos_admin()
+    except Exception as e:
+        print(f"❌ Error obteniendo pedidos: {e}")
         pedidos = []
-    else:
-        # Leer pedidos del archivo CSV
-        pedidos = []
-        with open("pedidos.csv", "r", encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                pedidos.append(row)
-
-        # Ordenar por fecha descendente (más recientes primero)
-        pedidos.reverse()
-
     return render_template('admin_pedidos.html', pedidos=pedidos)
 
 @app.route('/admin/pedidos/detalle/<pedido_id>')
 @admin_required
 def admin_pedido_detalle(pedido_id):
-    # Buscar el archivo de detalles del pedido
-    detalle_filename = f"pedido_{pedido_id}_detalle.json"
+    # Buscar detalles del pedido en la BD
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT * FROM pedidos_online WHERE id = %s OR numero_pedido = %s LIMIT 1
+        """, (pedido_id, pedido_id))
+        pedido_info = cursor.fetchone()
 
-    if not os.path.exists(detalle_filename):
-        flash("No se encontró el detalle del pedido")
+        if not pedido_info:
+            flash("No se encontró el detalle del pedido")
+            cursor.close()
+            conn.close()
+            return redirect(url_for('admin_pedidos'))
+
+        cursor.execute("""
+            SELECT nombre_producto, cantidad, precio_unitario, descuento, subtotal
+            FROM detalles_pedido_online WHERE pedido_id = %s
+        """, (pedido_info['id'],))
+        detalles = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        pedido = {
+            "cliente": {
+                "nombre": pedido_info.get('cliente_nombre', 'N/A'),
+                "telefono": pedido_info.get('cliente_telefono', ''),
+                "direccion": pedido_info.get('direccion', ''),
+            },
+            "total": float(pedido_info.get('total', 0)),
+            "estado": pedido_info.get('estado', 'Pendiente'),
+            "metodo_pago": pedido_info.get('metodo_pago', ''),
+            "productos": detalles
+        }
+        return render_template('admin_pedido_detalle.html', pedido=pedido)
+    except Exception as e:
+        print(f"Error obteniendo detalle pedido: {e}")
+        flash("Error al obtener detalle del pedido")
         return redirect(url_for('admin_pedidos'))
-
-    # Cargar detalles del pedido
-    with open(detalle_filename, "r", encoding="utf-8") as f:
-        pedido = json.load(f)
-
-    return render_template('admin_pedido_detalle.html', pedido=pedido)
 
 @app.route('/admin/pedidos/estado/<pedido_id>/<nuevo_estado>')
 @admin_required
 def admin_pedido_estado(pedido_id, nuevo_estado):
-    # Verificar que el estado sea válido
     estados_validos = ["Pendiente", "En proceso", "Enviado", "Entregado", "Cancelado"]
     if nuevo_estado not in estados_validos:
         flash("Estado no válido")
         return redirect(url_for('admin_pedidos'))
 
-    # Actualizar el estado en el archivo CSV
-    pedidos = []
-    with open("pedidos.csv", "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            if row["id"] == pedido_id:
-                row["estado"] = nuevo_estado
-            pedidos.append(row)
-
-    # Escribir de nuevo el archivo CSV
-    with open("pedidos.csv", "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["id", "fecha", "nombre", "direccion", "colonia", "telefono", "metodo_pago", "total", "estado"])
-        writer.writeheader()
-        writer.writerows(pedidos)
-
-    # Notificar por Telegram si se marca como enviado o entregado
-    if nuevo_estado in ["Enviado", "Entregado"]:
-        try:
-            # Cargar datos del pedido
-            detalle_filename = f"pedido_{pedido_id}_detalle.json"
-            if os.path.exists(detalle_filename):
-                with open(detalle_filename, "r", encoding="utf-8") as f:
-                    pedido = json.load(f)
-
-                from telegram_notifier import send_telegram_message
-                cliente = pedido.get("cliente", {})
-
-                # Obtener fecha y hora en formato de México
-                fecha_hora_mx = datetime.now(mexico_timezone).strftime('%d/%m/%Y %H:%M')
-
-                # Crear enlace de WhatsApp
-                telefono = cliente.get('telefono', '')
-                telefono_limpio = telefono.replace(" ", "").replace("-", "")
-                enlace_whatsapp = f"https://wa.me/{telefono_limpio}"
-
-                mensaje = f"""<b>🔄 PEDIDO {nuevo_estado.upper()}</b>\n\n
-<b>Cliente:</b> {cliente.get('nombre', 'N/A')}
-<b>Dirección:</b> {cliente.get('direccion', 'N/A')}
-<b>Teléfono:</b> {telefono}\n
-<b>Total:</b> ${pedido.get('total', 0):.2f}\n
-<b>Fecha:</b> {fecha_hora_mx}"""
-
-                # Agregar enlace de WhatsApp
-                mensaje += f"\n\n<b>Contactar por WhatsApp:</b> <a href=\"{enlace_whatsapp}\">Abrir chat</a>"
-
-                send_telegram_message(mensaje)
-        except Exception as e:
-            print(f"❌ Error al enviar notificación de actualización: {e}")
+    from db_config import actualizar_estado_pedido
+    actualizar_estado_pedido(pedido_id, nuevo_estado)
 
     flash(f"Estado del pedido actualizado a {nuevo_estado}")
     return redirect(url_for('admin_pedidos'))
