@@ -451,11 +451,11 @@ def checkout():
                         )
 
                     clip_data = clip_response.json()
-                    payment_url = clip_data.get("payment_url")
+                    payment_url = clip_data.get("payment_request_url")
                     payment_request_id = clip_data.get("payment_request_id", "")
 
                     if not payment_url:
-                        print(f"❌ Respuesta Clip sin payment_url: {clip_data}")
+                        print(f"❌ Respuesta Clip sin payment_request_url: {clip_data}")
                         return render_template(
                             "checkout.html",
                             base_template=plantilla_base,
