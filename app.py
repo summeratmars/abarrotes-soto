@@ -17,6 +17,7 @@ import shutil
 import secrets
 import pytz
 import requests
+import base64
 
 # Cargar variables de entorno desde .env
 load_dotenv()
@@ -393,11 +394,12 @@ def checkout():
             # Si el método es Clip, crear link de pago y redirigir
             if pago == "Clip":
                 clip_api_key = os.environ.get("CLIP_API_KEY")
-                if not clip_api_key:
+                clip_api_secret = os.environ.get("CLIP_API_SECRET")
+                if not clip_api_key or not clip_api_secret:
                     return render_template(
                         "checkout.html",
                         base_template=plantilla_base,
-                        mp_error="No hay API Key de Clip configurada."
+                        mp_error="No hay credenciales de Clip configuradas (CLIP_API_KEY y CLIP_API_SECRET)."
                     )
 
                 base_url = os.environ.get("PUBLIC_BASE_URL") or request.url_root.rstrip("/")
@@ -407,6 +409,9 @@ def checkout():
                         base_template=plantilla_base,
                         mp_error="Clip requiere una URL pública https. Configura PUBLIC_BASE_URL con tu dominio https."
                     )
+
+                # Generar token Basic Auth: base64(api_key:api_secret)
+                clip_credentials = base64.b64encode(f"{clip_api_key}:{clip_api_secret}".encode()).decode()
 
                 clip_payload = {
                     "amount": float(total),
@@ -432,7 +437,7 @@ def checkout():
                 clip_url = "https://api.payclip.com/v2/checkout"
                 clip_headers = {
                     "Content-Type": "application/json",
-                    "Authorization": f"Basic {clip_api_key}"
+                    "Authorization": f"Basic {clip_credentials}"
                 }
 
                 try:
@@ -631,9 +636,11 @@ def confirmacion():
         if clip_payment_request_id:
             try:
                 clip_api_key = os.environ.get("CLIP_API_KEY")
-                if clip_api_key:
+                clip_api_secret = os.environ.get("CLIP_API_SECRET")
+                if clip_api_key and clip_api_secret:
+                    clip_credentials = base64.b64encode(f"{clip_api_key}:{clip_api_secret}".encode()).decode()
                     clip_check_url = f"https://api.payclip.com/v2/checkout/{clip_payment_request_id}"
-                    clip_headers = {"Authorization": f"Basic {clip_api_key}"}
+                    clip_headers = {"Authorization": f"Basic {clip_credentials}"}
                     clip_resp = requests.get(clip_check_url, headers=clip_headers, timeout=15)
                     if clip_resp.status_code < 400:
                         clip_data = clip_resp.json()
