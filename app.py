@@ -267,6 +267,8 @@ def checkout():
                 info_pago = "Transferencia SPEI"
             elif pago == "Mercado Pago":
                 info_pago = "Mercado Pago (pago en línea)"
+            elif pago == "Clip":
+                info_pago = "Clip (pago en línea)"
             
             session["colonia"] = colonia
             session["horario_entrega"] = horario_entrega
@@ -388,6 +390,92 @@ def checkout():
                 _map_preference_to_folio(session.get("mp_preference_id"), folio)
                 return redirect(init_point)
 
+            # Si el método es Clip, crear link de pago y redirigir
+            if pago == "Clip":
+                clip_api_key = os.environ.get("CLIP_API_KEY")
+                if not clip_api_key:
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="No hay API Key de Clip configurada."
+                    )
+
+                base_url = os.environ.get("PUBLIC_BASE_URL") or request.url_root.rstrip("/")
+                if not base_url.startswith("https://"):
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="Clip requiere una URL pública https. Configura PUBLIC_BASE_URL con tu dominio https."
+                    )
+
+                clip_payload = {
+                    "amount": float(total),
+                    "currency": "MXN",
+                    "purchase_description": f"Pedido Abarrotes Soto #{folio or 'SN'}",
+                    "redirection_url": {
+                        "success": f"{base_url}/confirmacion?clip_status=approved&clip_folio={folio}",
+                        "error": f"{base_url}/confirmacion?clip_status=rejected&clip_folio={folio}",
+                        "default": f"{base_url}/confirmacion?clip_status=pending&clip_folio={folio}"
+                    },
+                    "metadata": {
+                        "me_reference_id": folio or "",
+                        "customer_info": {
+                            "name": nombre or "Cliente",
+                            "phone": telefono or ""
+                        }
+                    },
+                    "override_settings": {
+                        "payment_method": ["card"]
+                    }
+                }
+
+                clip_url = "https://api.payclip.com/v2/checkout"
+                clip_headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Basic {clip_api_key}"
+                }
+
+                try:
+                    clip_response = requests.post(clip_url, headers=clip_headers, json=clip_payload, timeout=20)
+                    if clip_response.status_code >= 400:
+                        print(f"❌ Error Clip: {clip_response.status_code} - {clip_response.text}")
+                        return render_template(
+                            "checkout.html",
+                            base_template=plantilla_base,
+                            mp_error=f"No se pudo iniciar el pago con Clip. Error: {clip_response.status_code}"
+                        )
+
+                    clip_data = clip_response.json()
+                    payment_url = clip_data.get("payment_url")
+                    payment_request_id = clip_data.get("payment_request_id", "")
+
+                    if not payment_url:
+                        print(f"❌ Respuesta Clip sin payment_url: {clip_data}")
+                        return render_template(
+                            "checkout.html",
+                            base_template=plantilla_base,
+                            mp_error="No se pudo obtener el link de pago de Clip."
+                        )
+
+                    session["clip_payment_request_id"] = payment_request_id
+                    # Mapear el payment_request_id al folio para recuperación
+                    _map_preference_to_folio(f"clip_{payment_request_id}", folio)
+                    return redirect(payment_url)
+
+                except requests.exceptions.Timeout:
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="Tiempo de espera agotado al conectar con Clip. Intenta de nuevo."
+                    )
+                except Exception as clip_err:
+                    print(f"❌ Error inesperado Clip: {clip_err}")
+                    return render_template(
+                        "checkout.html",
+                        base_template=plantilla_base,
+                        mp_error="Error inesperado al procesar pago con Clip."
+                    )
+
             return redirect("/confirmacion")
 
         except Exception as e:
@@ -487,7 +575,82 @@ def confirmacion():
     mp_status = request.args.get("collection_status") or request.args.get("status")
     mp_payment_id = request.args.get("payment_id") or request.args.get("collection_id")
     mp_preference_id = request.args.get("preference_id")
-    if mp_status or mp_payment_id:
+
+    # Detectar retorno de Clip
+    clip_status = request.args.get("clip_status")
+    clip_folio = request.args.get("clip_folio")
+
+    if clip_status:
+        pago = "Clip"
+        estado_clip = clip_status.lower()
+        if estado_clip == "approved":
+            info_pago = "Clip (pago en línea aprobado)"
+        elif estado_clip == "rejected":
+            info_pago = "Clip (pago rechazado)"
+        else:
+            info_pago = f"Clip (estado: {clip_status})"
+        session["pago"] = pago
+        session["info_pago"] = info_pago
+
+        # Recuperar datos si la sesión llegó vacía (retorno de Clip)
+        datos_vacios_clip = not carrito and not nombre and not direccion and not telefono
+        if datos_vacios_clip and clip_folio:
+            try:
+                snapshot = _get_order_snapshot_by_folio(clip_folio)
+                if snapshot:
+                    nombre = snapshot.get("nombre", "")
+                    direccion = snapshot.get("direccion", "")
+                    colonia = snapshot.get("colonia", "")
+                    telefono = snapshot.get("telefono", "")
+                    numero_cliente = snapshot.get("numero_cliente", "")
+                    horario_entrega = snapshot.get("horario_entrega", "")
+                    pago_efectivo_cambio = snapshot.get("pago_efectivo_cambio", "")
+                    pago_efectivo_monto = snapshot.get("pago_efectivo_monto", "")
+                    carrito = snapshot.get("carrito", [])
+                    total = snapshot.get("total", 0)
+                    ahorro = snapshot.get("ahorro", 0)
+                    folio = snapshot.get("folio", clip_folio)
+
+                    session["nombre"] = nombre
+                    session["direccion"] = direccion
+                    session["colonia"] = colonia
+                    session["telefono"] = telefono
+                    session["numero_cliente"] = numero_cliente
+                    session["horario_entrega"] = horario_entrega
+                    session["pago"] = pago
+                    session["info_pago"] = info_pago
+                    session["carrito"] = carrito
+                    session["total"] = total
+                    session["ahorro"] = ahorro
+                    session["folio"] = folio
+            except Exception as e:
+                print(f"❌ Error al recuperar datos de Clip: {e}")
+
+        # Consultar estado real del pago en Clip si tenemos el payment_request_id
+        clip_payment_request_id = session.get("clip_payment_request_id")
+        if clip_payment_request_id:
+            try:
+                clip_api_key = os.environ.get("CLIP_API_KEY")
+                if clip_api_key:
+                    clip_check_url = f"https://api.payclip.com/v2/checkout/{clip_payment_request_id}"
+                    clip_headers = {"Authorization": f"Basic {clip_api_key}"}
+                    clip_resp = requests.get(clip_check_url, headers=clip_headers, timeout=15)
+                    if clip_resp.status_code < 400:
+                        clip_data = clip_resp.json()
+                        clip_real_status = clip_data.get("status", "").upper()
+                        if clip_real_status == "COMPLETED":
+                            info_pago = "Clip (pago en línea aprobado ✅)"
+                        elif clip_real_status == "REJECTED":
+                            info_pago = "Clip (pago rechazado ❌)"
+                        elif clip_real_status == "EXPIRED":
+                            info_pago = "Clip (pago expirado)"
+                        else:
+                            info_pago = f"Clip (estado: {clip_real_status})"
+                        session["info_pago"] = info_pago
+            except Exception as clip_err:
+                print(f"⚠️ No se pudo verificar estado Clip: {clip_err}")
+
+    elif mp_status or mp_payment_id:
         pago = "Mercado Pago"
         if mp_status:
             estado = mp_status.lower()
@@ -632,6 +795,15 @@ def confirmacion():
                     pago_detalle = "Pago en línea con Mercado Pago"
                 if mp_payment_id:
                     pago_detalle += f"\n• ID de pago: {mp_payment_id}"
+            elif pago == "Clip":
+                pago_emoji = "🔷"
+                if clip_status:
+                    pago_detalle = f"Pago en línea con Clip\n• Estado: {clip_status}"
+                else:
+                    pago_detalle = "Pago en línea con Clip"
+                clip_req_id = session.get("clip_payment_request_id", "")
+                if clip_req_id:
+                    pago_detalle += f"\n• ID de pago: {clip_req_id}"
             else:
                 pago_emoji = "💰"
                 pago_detalle = info_pago
@@ -715,7 +887,8 @@ def confirmacion():
                            ahorro=ahorro,
                            pedido_id=session.get("folio"),
                            mp_status=mp_status,
-                           mp_payment_id=mp_payment_id)
+                           mp_payment_id=mp_payment_id,
+                           clip_status=clip_status)
 
 
 @app.route("/api/confirmacion/recuperar", methods=["POST"])

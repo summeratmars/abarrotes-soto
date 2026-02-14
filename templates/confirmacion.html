@@ -8,7 +8,8 @@
             data-has-carrito="{{ 1 if carrito else 0 }}"
             data-telefono="{{ telefono }}"
             data-mp-status="{{ mp_status or '' }}"
-            data-mp-payment-id="{{ mp_payment_id or '' }}"></div>
+            data-mp-payment-id="{{ mp_payment_id or '' }}"
+            data-clip-status="{{ clip_status or '' }}"></div>
     {% if pedido_id %}
     <p style="font-size:1.2em;color:#b30000;font-weight:bold;">Tu número de pedido es: #{{ pedido_id }}</p>
     {% endif %}
