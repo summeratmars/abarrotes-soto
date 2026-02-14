@@ -417,6 +417,7 @@ def checkout():
                     "amount": float(total),
                     "currency": "MXN",
                     "purchase_description": f"Pedido Abarrotes Soto #{folio or 'SN'}",
+                    "image_url": f"{base_url}/static/images/logo_abarrotes_soto.png",
                     "redirection_url": {
                         "success": f"{base_url}/confirmacion?clip_status=approved&clip_folio={folio}",
                         "error": f"{base_url}/confirmacion?clip_status=rejected&clip_folio={folio}",
